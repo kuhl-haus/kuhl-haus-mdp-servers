@@ -71,8 +71,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl:${{ env.IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl:latest
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push MDP Docker image
@@ -83,8 +83,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp:${{ env.IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp:latest
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push WDS Docker image
@@ -95,7 +95,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds:${{ env.IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds:latest
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
