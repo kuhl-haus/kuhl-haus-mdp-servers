@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kuhl-haus-mdp-servers"
+version = "0.0.1"
+description = "Container image build repository for market data processing servers"
+authors = [
+    { name = "Tom Pounders", email = "git@oldschool.engineer" },
+]
+readme = "README.md"
+requires-python = "<3.13,>=3.9.21"
+license-files = ["LICENSE.txt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python"
+]
+dependencies = [
+    "kuhl-haus-mdp",
+]
+
+[project.urls]
+Homepage = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers"
+Documentation = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/wiki"
+Source = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers.git"
+Changelog = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/commits"
+Tracker = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues"
+
+
+[project.scripts]
+mdl_server = "kuhl_haus.servers.mdl_server:app"
+mdp_server = "kuhl_haus.servers.mdp_server:app"
+wds_server = "kuhl_haus.servers.wds_server:app"
+
+[tool.setuptools]
+zip-safe = true
+include-package-data = true
+package-dir = {"" = "src"}
+packages = {find = {where = ["src"], exclude = ["tests"]}}
+
+[tool.pytest.ini_options]
+addopts = ["--verbose"]
+norecursedirs = ["dist", "build", ".tox"]
+testpaths = ["tests"]
+
+[tool.devpi.upload]
+no_vcs = 1
+formats = ["bdist_wheel"]
+
+[tool.flake8]
+max_line_length = 88
+extend_ignore = ["E203", "W503"]
+exclude = [".tox", "build", "dist", ".eggs", "docs/conf.py"]
+
+[tool.pyscaffold]
+version = "4.6"
+package = "servers"
+extensions = ["namespace"]
+namespace = "kuhl_haus"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+package-dir = "src"
+includes = ["src/kuhl_haus"]
