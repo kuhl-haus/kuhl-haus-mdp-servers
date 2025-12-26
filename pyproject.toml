@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuhl-haus-mdp-servers"
-version = "0.0.2"
+version = "0.0.3"
 description = "Container image build repository for market data processing servers"
 authors = [
     { name = "Tom Pounders", email = "git@oldschool.engineer" },
