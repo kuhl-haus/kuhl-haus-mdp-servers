@@ -85,7 +85,18 @@ async def lifespan(app: FastAPI):
             queue_name=queue,
             redis_url=settings.redis_url,
         )
-
+    #     # Market Data Cache
+    #     redis_client = aioredis.from_url(
+    #         settings.redis_url,
+    #         encoding="utf-8",
+    #         decode_responses=True,
+    #         max_connections=1000,
+    #         socket_connect_timeout=10,  # Add timeout
+    #     )
+    #     market_data_cache = MarketDataCache(redis_client=redis_client)
+    #
+    #     # TODO: Create a component to fetch company information from FMP.
+    #
     # Start MarketDataScanners in separate processes
     process_manager.start_worker(
         name=f"scanner_{MarketDataScannerNames.TOP_STOCKS.value}",
@@ -106,61 +117,6 @@ async def lifespan(app: FastAPI):
     process_manager.stop_all(timeout=15.0)
     logger.info("Market Data Processor is stopped.")
 
-
-# @asynccontextmanager
-# async def lifespan_old(app: FastAPI):
-#     """Startup and shutdown events"""
-#
-#     # Startup
-#     logger.info("Starting Market Data Processor...")
-#     global market_data_scanners, massive_data_processors, market_data_cache
-#     logger.info(f"Queues: {massive_data_queues}")
-#     for queue in massive_data_queues:
-#         mdp = MassiveDataProcessor(
-#             rabbitmq_url=settings.rabbitmq_url,
-#             queue_name=queue,
-#             redis_url=settings.redis_url,
-#         )
-#         logger.info(f"Created MDP for: {queue}")
-#         massive_data_processors[queue] = mdp
-#
-#     # Market Data Cache
-#     redis_client = aioredis.from_url(
-#         settings.redis_url,
-#         encoding="utf-8",
-#         decode_responses=True,
-#         max_connections=1000,
-#         socket_connect_timeout=10,  # Add timeout
-#     )
-#     market_data_cache = MarketDataCache(redis_client=redis_client)
-#
-#     # TODO: Create a component to fetch company information from FMP.
-#
-#     # Top Stocks scanner
-#     market_data_scanners[MarketDataScannerNames.TOP_STOCKS.value] = MarketDataScanner(
-#         redis_url=settings.redis_url,
-#         analyzer=TopStocksAnalyzer(
-#             rest_client=RESTClient(api_key=settings.massive_api_key)
-#         ),
-#         subscriptions=[f"{MarketDataCacheKeys.AGGREGATE.value}:*"]
-#     )
-#     logger.info(f"Created MDP for: {MarketDataScannerNames.TOP_STOCKS.value}")
-#
-#     # Start all massive data processors
-#     for processor in massive_data_processors.values():
-#         asyncio.create_task(processor.start())
-#
-#     # Start all scanners
-#     await start_scanners()
-#     logger.info("Market Data Processor is running.")
-#
-#     yield
-#
-#     # Shutdown
-#     logger.info("Shutting down Market Data Processor...")
-#     await stop_scanners()
-#     await redis_client.close()
-#     logger.info("Market Data Processor is stopped.")
 
 app = FastAPI(
     title="Market Data Processor",
@@ -191,10 +147,6 @@ async def start_scanners():
     logger.info("Market Data Scanners started successfully.")
 
 
-# Invoke-RestMethod -Uri "https://crow-mdp.kuhl.haus/start_scanner" `
-#                   -Method Post `
-#                   -Body (ConvertTo-Json "top_10_lists") `
-#                   -ContentType "application/json"
 @app.post("/start_scanner")
 async def start_scanner(scanner_name: str):
     if scanner_name not in market_data_scanners.keys():
@@ -221,10 +173,6 @@ async def stop_scanners():
     logger.info("Market Data Scanners stopped successfully.")
 
 
-# Invoke-RestMethod -Uri "https://crow-mdp.kuhl.haus/stop_scanner" `
-#                   -Method Post `
-#                   -Body (ConvertTo-Json "top_10_lists") `
-#                   -ContentType "application/json"
 @app.post("/stop_scanner")
 async def stop_scanner(scanner_name: str):
     if scanner_name not in market_data_scanners.keys():
@@ -255,10 +203,6 @@ async def restart_scanners():
     logger.info("Restarting Market Data Scanners restarted successfully.")
 
 
-# Invoke-RestMethod -Uri "https://crow-mdp.kuhl.haus/restart_scanner" `
-#                   -Method Post `
-#                   -Body (ConvertTo-Json "top_10_lists") `
-#                   -ContentType "application/json"
 @app.post("/restart_scanner")
 async def restart_scanner(scanner_name: str):
     if scanner_name not in market_data_scanners.keys():
@@ -295,45 +239,6 @@ async def health_check(response: Response):
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "ERROR", "message": str(e)}
 
-
-# @app.get("/health_old", status_code=200)
-# async def health_check_old(response: Response):
-#     """Health check endpoint"""
-#     # return {"status": "OK"}
-#     # The server should be connected to Redis even when the WebSocket client is not running.
-#     try:
-#         ret: Dict[str, Union[str, dict]] = {
-#             "status": "OK",
-#             "container_image": settings.container_image,
-#             "image_version": settings.image_version,
-#         }
-#         for queue in massive_data_queues:
-#             mdp = massive_data_processors[queue]
-#             ret[queue] = {
-#                 "queue_name": mdp.queue_name,
-#                 "mdq_connected": mdp.mdq_connected,
-#                 "mdc_connected": mdp.mdc_connected,
-#                 "processed": mdp.processed,
-#                 "duplicated": mdp.duplicated,
-#                 "error": mdp.error,
-#                 "decoding_error": mdp.decoding_error,
-#                 "dropped": mdp.dropped,
-#             }
-#
-#         for k in market_data_scanners.keys():
-#             ret[k] = {
-#                 "mdc_connected": market_data_scanners[k].mdc_connected,
-#                 "processed": market_data_scanners[k].processed,
-#                 "published_results": market_data_scanners[k].published_results,
-#                 "decoding_errors": market_data_scanners[k].decoding_errors,
-#                 "empty_results": market_data_scanners[k].empty_results,
-#                 "errors": market_data_scanners[k].errors,
-#                 "restarts": market_data_scanners[k].restarts,
-#             }
-#         return ret
-#     except Exception as e:
-#         logger.error(f"Fatal error while processing health check: {e}")
-#         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
 if __name__ == "__main__":
     import uvicorn

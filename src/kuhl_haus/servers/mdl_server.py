@@ -8,7 +8,6 @@ from fastapi import FastAPI, Response, status
 from massive.websocket import Feed, Market
 from pydantic_settings import BaseSettings
 
-# from kuhl_haus.mdp.integ.massive_data_cache import MassiveDataCache
 from kuhl_haus.mdp.integ.massive_data_queues import MassiveDataQueues
 from kuhl_haus.mdp.integ.massive_data_listener import MassiveDataListener
 from kuhl_haus.mdp.integ.utils import get_massive_api_key
@@ -57,7 +56,6 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Global state
-# massive_data_cache: Optional[MassiveDataCache] = None
 massive_data_queues: Optional[MassiveDataQueues] = None
 massive_data_listener: Optional[MassiveDataListener] = None
 
@@ -68,7 +66,7 @@ async def lifespan(app: FastAPI):
 
     # Startup
     logger.info("Instantiating Market Data Listener...")
-    global massive_data_listener, massive_data_queues  # , massive_data_cache
+    global massive_data_listener, massive_data_queues
 
     massive_data_queues = MassiveDataQueues(
         logger=logger,
@@ -77,12 +75,8 @@ async def lifespan(app: FastAPI):
     )
     await massive_data_queues.setup_queues()
 
-    # massive_data_cache = MassiveDataCache(redis_url=settings.redis_url)
-    # await massive_data_cache.start()
-
     massive_data_listener = MassiveDataListener(
         logger=logger,
-        # message_handler=massive_data_cache.handle_messages,
         message_handler=massive_data_queues.handle_messages,
         api_key=settings.massive_api_key,
         feed=settings.feed,
@@ -108,7 +102,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down WebSocket sidecar...")
     await stop_websocket_client()
-    # await massive_data_cache.stop()
     await massive_data_queues.shutdown()
 
 app = FastAPI(
@@ -220,10 +213,8 @@ async def restart_websocket_client():
 
 @app.get("/")
 async def root():
-    # if massive_data_cache.mdc_connected and massive_data_listener.connection_status["connected"]:
     if massive_data_queues.connection_status["connected"] and massive_data_listener.connection_status["connected"]:
         ret = "Running"
-    # elif massive_data_cache.mdc_connected:
     elif massive_data_queues.connection_status["connected"]:
         ret = "Idle"
     else:
@@ -234,12 +225,6 @@ async def root():
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
         "image_version": settings.image_version,
-        # "mdc_connection_status": {
-        #     "running": massive_data_cache.running,
-        #     "connected": massive_data_cache.mdc_connected,
-        #     "processed": massive_data_cache.processed,
-        #     "dropped": massive_data_cache.dropped
-        # },
         "mdq_connection_status": massive_data_queues.connection_status,
         "mdl_connection_status": massive_data_listener.connection_status
     }
@@ -248,9 +233,8 @@ async def root():
 @app.get("/health", status_code=200)
 async def health_check(response: Response):
     """Health check endpoint"""
-    # The server should be connected to MDC even when the WebSocket client is not running.
+    # The server should be connected to MDQ even when the WebSocket client is not running.
     status_message = "OK"
-    # if not massive_data_cache.mdc_connected:
     if not massive_data_queues.connection_status["connected"]:
         status_message = "Unhealthy"
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
@@ -264,12 +248,6 @@ async def health_check(response: Response):
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
         "image_version": settings.image_version,
-        # "mdc_connection_status": {
-        #     "running": massive_data_cache.running,
-        #     "connected": massive_data_cache.mdc_connected,
-        #     "processed": massive_data_cache.processed,
-        #     "dropped": massive_data_cache.dropped
-        # },
         "mdq_connection_status": massive_data_queues.connection_status,
         "mdl_connection_status": massive_data_listener.connection_status
     }
