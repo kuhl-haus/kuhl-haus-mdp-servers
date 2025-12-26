@@ -1,4 +1,4 @@
-name: Build, Test, and Release Pipeline
+name: Build Images
 permissions:
   contents: read
   pull-requests: write
