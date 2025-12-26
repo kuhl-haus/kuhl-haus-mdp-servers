@@ -32,6 +32,8 @@ jobs:
         python-version: "3.12"
     - name: Install dependencies
       run: pip install -r requirements.txt
+    - name: Install build dependencies
+      run: pip install -r requirements-build.txt
     - name: Install package
       run: pip install --no-cache-dir -e .
 

@@ -27,6 +27,13 @@ Source = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers.git"
 Changelog = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/commits"
 Tracker = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues"
 
+[project.optional-dependencies]
+testing = [
+    "setuptools",
+    "pdm-backend",
+    "pytest",
+    "pytest-cov",
+]
 
 [project.scripts]
 mdl_server = "kuhl_haus.servers.mdl_server:app"
