@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["pdm-backend", "setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuhl-haus-mdp-servers"
-version = "0.0.3"
+dynamic = ["version"]
 description = "Container image build repository for market data processing servers"
 authors = [
     { name = "Tom Pounders", email = "git@oldschool.engineer" },
@@ -34,6 +34,10 @@ testing = [
     "pytest",
     "pytest-cov",
 ]
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
 
 [project.scripts]
 mdl_server = "kuhl_haus.servers.mdl_server:app"
@@ -68,6 +72,7 @@ namespace = "kuhl_haus"
 
 [tool.pdm]
 distribution = true
+version = { source = "scm" }
 
 [tool.pdm.build]
 package-dir = "src"

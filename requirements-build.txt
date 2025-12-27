@@ -1,4 +1,5 @@
 setuptools
+setuptools-scm
 pdm
 pdm-backend
 pytest
