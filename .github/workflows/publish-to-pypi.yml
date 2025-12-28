@@ -47,7 +47,6 @@ jobs:
 
   github-release:
     name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/')  # only release on tag pushes
     needs: [build-package]
     runs-on: ubuntu-latest
 
@@ -85,7 +84,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish to TestPyPI
-    needs: [build-package]
+    needs: [build-package, github-release]
     runs-on: ubuntu-latest
     environment:
       name: testpypi
