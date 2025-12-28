@@ -237,7 +237,7 @@ async def health_check(response: Response):
     except Exception as e:
         logger.error(f"Health check error: {e}")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "ERROR", "message": str(e)}
+        return {"status": "ERROR", "message": "An unhandled exception occurred during health check."}
 
 
 if __name__ == "__main__":
