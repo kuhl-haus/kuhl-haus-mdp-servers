@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -78,15 +77,6 @@ app = FastAPI(
 async def root():
     # return redirect to health_check
     return RedirectResponse(url="/health")
-
-
-@app.get("/restart")
-async def restart_wds_service():
-    logger.info("Restarting Widget Data Service...")
-    await wds_service.stop()
-    await asyncio.sleep(1)
-    await wds_service.start()
-    logger.info("Widget Data Service restarted successfully.")
 
 
 @app.get("/health", status_code=200)
