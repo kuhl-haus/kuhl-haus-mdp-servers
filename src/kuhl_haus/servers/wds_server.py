@@ -17,7 +17,7 @@ class UnauthorizedException(Exception):
 
 class Settings(BaseSettings):
     # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://redis:redis@localhost:6379/0")
+    redis_url: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")

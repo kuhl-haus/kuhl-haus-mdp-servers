@@ -12,12 +12,6 @@ from kuhl_haus.mdp.integ.massive_data_queues import MassiveDataQueues
 from kuhl_haus.mdp.integ.massive_data_listener import MassiveDataListener
 from kuhl_haus.mdp.integ.utils import get_massive_api_key
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
 
 class Settings(BaseSettings):
     # TODO: Retrieve Massive client settings from Service Control Plane API call
@@ -28,7 +22,7 @@ class Settings(BaseSettings):
     # The default values can be overridden via environment variable; use the API to manage at runtime.
     feed: Union[str, Feed] = os.environ.get("MASSIVE_FEED", Feed.RealTime)
     market: Union[str, Market] = os.environ.get("MASSIVE_MARKET", Market.Stocks)
-    subscriptions: Optional[List[str]] = os.environ.get("MASSIVE_SUBSCRIPTIONS", ["A.*"])
+    subscriptions: Optional[List[str]] = os.environ.get("MASSIVE_SUBSCRIPTIONS", ["AM.*"])
 
     # Additional Massive/Polygon.io Settings - default values can be overridden via environment variables
     raw: bool = os.environ.get("MASSIVE_RAW", False)
@@ -54,6 +48,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+logging.basicConfig(
+    level=settings.log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Global state
 massive_data_queues: Optional[MassiveDataQueues] = None

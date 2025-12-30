@@ -1,1 +1,11 @@
-kuhl-haus-mdp
+kuhl-haus-mdp~=0.1.0
+aio-pika
+fastapi
+importlib_metadata
+massive
+pydantic-settings
+python-dotenv
+redis[asyncio]
+tenacity
+uvicorn[standard]
+websockets

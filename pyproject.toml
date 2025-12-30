@@ -18,6 +18,15 @@ classifiers = [
 ]
 dependencies = [
     "kuhl-haus-mdp",
+    "websockets",
+    "aio-pika",
+    "redis[asyncio]",
+    "tenacity",
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "python-dotenv",
+    "massive"
 ]
 
 [project.urls]
