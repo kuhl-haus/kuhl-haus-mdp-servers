@@ -41,14 +41,16 @@ logger = logging.getLogger(__name__)
 
 # Global service instance
 wds_service: WidgetDataService = None
+active_ws_clients: Set[WebSocket] = set()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage WDS lifecycle."""
-    global wds_service
+    global wds_service, active_ws_clients
 
     # Startup
+    active_ws_clients.clear()
     redis_client = redis.from_url(
         settings.redis_url,
         encoding="utf-8",
@@ -61,6 +63,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
+    active_ws_clients.clear()
     await wds_service.stop()
     await pubsub_client.close()
     await redis_client.close()
@@ -88,6 +91,7 @@ async def health_check(response: Response):
             "status": "OK",
             "container_image": settings.container_image,
             "image_version": settings.image_version,
+            "active_ws_clients": len(active_ws_clients),
         })
     except Exception as e:
         logger.error(f"Fatal error while processing health check: {e}")
@@ -122,10 +126,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
             if action == "auth":
                 api_key = data.get("api_key")
+                # NOTE: This service is designed for internal use and for a
+                # single-user. As such, authentication is optional and, if
+                # enabled, only supports a single API key, which is set in the
+                # AUTH_API_KEY environment variable. Adding support for
+                # user-specific API keys is non-trivial.
+                # At some point in the future, I may consider adding a more
+                # robust authentication system, but this is acceptable for now.
+                #
+                # [FEATURE] Support for user-specific API keys in Widget Data Service
+                # https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues/1
+
                 if api_key == settings.auth_api_key:
                     authenticated = True
                     logger.info(f"wds.ws.authenticated client_info:{client_info}")
                     await websocket.send_json({"status": "authorized"})
+                    active_ws_clients.add(websocket)
                 else:
                     await websocket.send_json({"status": "invalid key"})
                     await websocket.close()
@@ -185,6 +201,11 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.exception(f"wds.ws.unhandled_exception {repr(e)}", exc_info=True)
 
     finally:
+        # Note: the set.remove() method will raise a KeyError if the websocket
+        # is not present in the set. Using set.discard(), which will remove
+        # the websocket from active_ws_clients if it is present but will not
+        # raise an exception.
+        active_ws_clients.discard(websocket)
         # Clean up all subscriptions for this client
         for feed in active_feeds:
             await wds_service.unsubscribe(feed, websocket)

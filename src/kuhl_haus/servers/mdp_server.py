@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Dict, Union
 
-# import redis.asyncio as aioredis
+import redis.asyncio as aioredis
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings
@@ -13,12 +13,12 @@ from massive.rest import RESTClient
 
 from kuhl_haus.mdp.analyzers.top_stocks import TopStocksAnalyzer
 from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
-# from kuhl_haus.mdp.components.market_data_cache import MarketDataCache
+from kuhl_haus.mdp.components.market_data_cache import MarketDataCache
 from kuhl_haus.mdp.models.market_data_cache_keys import MarketDataCacheKeys
 from kuhl_haus.mdp.models.market_data_scanner_names import MarketDataScannerNames
 from kuhl_haus.mdp.models.massive_data_queue import MassiveDataQueue
 from kuhl_haus.mdp.integ.massive_data_processor import MassiveDataProcessor
-from kuhl_haus.mdp.integ.utils import get_massive_api_key
+from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
 
 
@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global state
-# market_data_cache: MarketDataCache = None
+market_data_cache: MarketDataCache = None
 market_data_scanners: Dict[str, MarketDataScanner] = {}
 massive_data_processors: Dict[str, MassiveDataProcessor] = {}
 massive_data_queues = [
@@ -71,7 +71,7 @@ process_manager: ProcessManager = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
-    global process_manager
+    global process_manager, market_data_cache
 
     logger.info("Starting Market Data Processor...")
     process_manager = ProcessManager()
@@ -85,27 +85,15 @@ async def lifespan(app: FastAPI):
             queue_name=queue,
             redis_url=settings.redis_url,
         )
-    #     # Market Data Cache
-    #     redis_client = aioredis.from_url(
-    #         settings.redis_url,
-    #         encoding="utf-8",
-    #         decode_responses=True,
-    #         max_connections=1000,
-    #         socket_connect_timeout=10,  # Add timeout
-    #     )
-    #     market_data_cache = MarketDataCache(redis_client=redis_client)
-    #
-    #     # TODO: Create a component to fetch company information from FMP.
-    #
+
     # Start MarketDataScanners in separate processes
     process_manager.start_worker(
         name=f"scanner_{MarketDataScannerNames.TOP_STOCKS.value}",
         worker_class=MarketDataScanner,
         redis_url=settings.redis_url,
-        analyzer=TopStocksAnalyzer(
-            rest_client=RESTClient(api_key=settings.massive_api_key)
-        ),
-        subscriptions=[f"{MarketDataCacheKeys.AGGREGATE.value}:*"]
+        massive_api_key=settings.massive_api_key,
+        subscriptions=[f"{MarketDataCacheKeys.AGGREGATE.value}:*"],
+        analyzer_class=TopStocksAnalyzer,
     )
 
     logger.info("Market Data Processor is running.")

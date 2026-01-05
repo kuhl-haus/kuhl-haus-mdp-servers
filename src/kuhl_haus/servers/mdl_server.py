@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings
 
 from kuhl_haus.mdp.integ.massive_data_queues import MassiveDataQueues
 from kuhl_haus.mdp.integ.massive_data_listener import MassiveDataListener
-from kuhl_haus.mdp.integ.utils import get_massive_api_key
+from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 
 
 class Settings(BaseSettings):
