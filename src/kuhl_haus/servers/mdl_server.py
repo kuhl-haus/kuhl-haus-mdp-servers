@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 from contextlib import asynccontextmanager
 from copy import copy
@@ -22,7 +23,11 @@ class Settings(BaseSettings):
     # The default values can be overridden via environment variable; use the API to manage at runtime.
     feed: Union[str, Feed] = os.environ.get("MASSIVE_FEED", Feed.RealTime)
     market: Union[str, Market] = os.environ.get("MASSIVE_MARKET", Market.Stocks)
-    subscriptions: Optional[List[str]] = os.environ.get("MASSIVE_SUBSCRIPTIONS", ["AM.*"])
+    subscriptions: Optional[List[str]] = (
+        json.loads(os.environ.get("MASSIVE_SUBSCRIPTIONS", '["AM.*"]'))
+        if os.environ.get("MASSIVE_SUBSCRIPTIONS")
+        else ["AM.*"]
+    )
 
     # Additional Massive/Polygon.io Settings - default values can be overridden via environment variables
     raw: bool = os.environ.get("MASSIVE_RAW", False)
