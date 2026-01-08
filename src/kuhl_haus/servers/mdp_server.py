@@ -14,10 +14,10 @@ from massive.rest import RESTClient
 from kuhl_haus.mdp.analyzers.top_stocks import TopStocksAnalyzer
 from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
 from kuhl_haus.mdp.components.market_data_cache import MarketDataCache
-from kuhl_haus.mdp.models.market_data_cache_keys import MarketDataCacheKeys
-from kuhl_haus.mdp.models.market_data_scanner_names import MarketDataScannerNames
-from kuhl_haus.mdp.models.massive_data_queue import MassiveDataQueue
-from kuhl_haus.mdp.integ.massive_data_processor import MassiveDataProcessor
+from kuhl_haus.mdp.components.massive_data_processor import MassiveDataProcessor
+from kuhl_haus.mdp.enum.market_data_cache_keys import MarketDataCacheKeys
+from kuhl_haus.mdp.enum.market_data_scanner_names import MarketDataScannerNames
+from kuhl_haus.mdp.enum.massive_data_queue import MassiveDataQueue
 from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
 
