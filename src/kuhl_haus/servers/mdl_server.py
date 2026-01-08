@@ -15,7 +15,6 @@ from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 
 
 class Settings(BaseSettings):
-    # TODO: Retrieve Massive client settings from Service Control Plane API call
     # Massive/Polygon.io API Key
     massive_api_key: str = get_massive_api_key()
 
@@ -24,9 +23,9 @@ class Settings(BaseSettings):
     feed: Union[str, Feed] = os.environ.get("MASSIVE_FEED", Feed.RealTime)
     market: Union[str, Market] = os.environ.get("MASSIVE_MARKET", Market.Stocks)
     subscriptions: Optional[List[str]] = (
-        json.loads(os.environ.get("MASSIVE_SUBSCRIPTIONS", '["AM.*"]'))
+        json.loads(os.environ.get("MASSIVE_SUBSCRIPTIONS", '["A.*", "T.*", "Q.*", "LULD.*"]'))
         if os.environ.get("MASSIVE_SUBSCRIPTIONS")
-        else ["AM.*"]
+        else ["A.*", "T.*", "Q.*", "LULD.*"]
     )
 
     # Additional Massive/Polygon.io Settings - default values can be overridden via environment variables
@@ -70,7 +69,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
 
     # Startup
-    logger.info("Instantiating Market Data Listener...")
+    logger.info("Instantiating Massive Data Listener...")
     global massive_data_listener, massive_data_queues
 
     massive_data_queues = MassiveDataQueues(
@@ -92,20 +91,20 @@ async def lifespan(app: FastAPI):
         max_reconnects=settings.max_reconnects,
         secure=settings.secure,
     )
-    logger.info("Market Data Listener is ready.")
+    logger.info("Massive Data Listener is ready.")
     # NOTE: AUTO-START FEATURE IS DISABLED BY DEFAULT.
     # Non-business licenses are limited to a single WebSocket connection for the entire account.
     # The stop, start, and restart API functionality enables manual control of the WebSocket connection.
     #
     # To enable auto-start, set the environment variable MARKET_DATA_LISTENER_AUTO_START_ENABLED=true.
     if settings.auto_start:
-        logger.info("[AUTO-START ENABLED]Starting Market Data Listener...")
+        logger.info("[AUTO-START ENABLED]Starting Massive Data Listener...")
         await massive_data_listener.start()
 
     yield
 
     # Shutdown
-    logger.info("Shutting down WebSocket sidecar...")
+    logger.info("Shutting down Massive Data Listener...")
     await stop_websocket_client()
     await massive_data_queues.shutdown()
 
@@ -200,19 +199,19 @@ async def subscriptions(subscriptions_list: List[str]):
 
 @app.get("/start")
 async def start_websocket_client():
-    logger.info("Starting Market Data Listener...")
+    logger.info("Starting Massive Data Listener...")
     await massive_data_listener.start()
 
 
 @app.get("/stop")
 async def stop_websocket_client():
-    logger.info("Stopping Market Data Listener...")
+    logger.info("Stopping Massive Data Listener...")
     await massive_data_listener.stop()
 
 
 @app.get("/restart")
 async def restart_websocket_client():
-    logger.info("Restarting Market Data Listener...")
+    logger.info("Restarting Massive Data Listener...")
     await massive_data_listener.restart()
 
 
@@ -225,7 +224,7 @@ async def root():
     else:
         ret = "Unhealthy"
     return {
-        "service": "Market Data Listener",
+        "service": "Massive Data Listener",
         "status": ret,
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
@@ -248,7 +247,7 @@ async def health_check(response: Response):
     #     status_message = "Unhealthy"
     #     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {
-        "service": "Market Data Listener",
+        "service": "Massive Data Listener",
         "status": status_message,
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
