@@ -88,7 +88,7 @@ async def health_check(response: Response):
     try:
         response.status_code = status.HTTP_200_OK
         return JSONResponse({
-            "status": "OK",
+            "status": 1,
             "container_image": settings.container_image,
             "image_version": settings.image_version,
             "active_ws_clients": len(active_ws_clients),
