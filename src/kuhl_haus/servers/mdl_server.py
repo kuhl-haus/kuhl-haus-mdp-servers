@@ -226,7 +226,6 @@ async def root():
     return {
         "service": "Massive Data Listener",
         "status": ret,
-        "status_code": status_code,
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
         "image_version": settings.image_version,
