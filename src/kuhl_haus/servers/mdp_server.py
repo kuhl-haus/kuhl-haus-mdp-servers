@@ -207,6 +207,7 @@ async def health_check(response: Response):
     try:
         ret: dict[str, Union[str, dict]] = {
             "status": "OK",
+            "status_code": 1,
             "container_image": settings.container_image,
             "image_version": settings.image_version,
         }
@@ -225,7 +226,7 @@ async def health_check(response: Response):
     except Exception as e:
         logger.error(f"Health check error: {e}")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "ERROR", "message": "An unhandled exception occurred during health check."}
+        return {"status": "ERROR", "status_code": 0, "message": "An unhandled exception occurred during health check."}
 
 
 if __name__ == "__main__":

@@ -226,6 +226,7 @@ async def root():
     return {
         "service": "Massive Data Listener",
         "status": ret,
+        "status_code": status_code,
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
         "image_version": settings.image_version,
@@ -239,8 +240,10 @@ async def health_check(response: Response):
     """Health check endpoint"""
     # The server should be connected to MDQ even when the WebSocket client is not running.
     status_message = "OK"
+    status_code = 1
     if not massive_data_queues.connection_status["connected"]:
         status_message = "Unhealthy"
+        status_code = 0
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     # TODO: Investigate if this caused health check failures in production during off-hours.
     # if settings.auto_start and not massive_data_listener.connection_status["connected"]:
@@ -249,6 +252,7 @@ async def health_check(response: Response):
     return {
         "service": "Massive Data Listener",
         "status": status_message,
+        "status_code": status_code,
         "auto-start": settings.auto_start,
         "container_image": settings.container_image,
         "image_version": settings.image_version,
