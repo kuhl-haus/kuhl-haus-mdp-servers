@@ -206,6 +206,7 @@ async def health_check(response: Response):
     """Health check endpoint - always responsive"""
     try:
         ret: dict[str, Union[str, dict]] = {
+            "service": "Market Data Processor",
             "status": "OK",
             "status_code": 1,
             "container_image": settings.container_image,
@@ -226,7 +227,14 @@ async def health_check(response: Response):
     except Exception as e:
         logger.error(f"Health check error: {e}")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "ERROR", "status_code": 0, "message": "An unhandled exception occurred during health check."}
+        return {
+            "service": "Market Data Processor",
+            "status": "ERROR",
+            "status_code": 0,
+            "container_image": settings.container_image,
+            "image_version": settings.image_version,
+            "message": "An unhandled exception occurred during health check."
+        }
 
 
 if __name__ == "__main__":

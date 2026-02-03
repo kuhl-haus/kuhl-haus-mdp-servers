@@ -88,6 +88,7 @@ async def health_check(response: Response):
     try:
         response.status_code = status.HTTP_200_OK
         return JSONResponse({
+            "service": "Widget Data Service",
             "status": "OK",
             "status_code": 1,
             "container_image": settings.container_image,
@@ -97,7 +98,14 @@ async def health_check(response: Response):
     except Exception as e:
         logger.error(f"Fatal error while processing health check: {e}")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "ERROR", "status_code": 0, "message": "An unhandled exception occurred during health check."}
+        return {
+            "service": "Widget Data Service",
+            "status": "ERROR",
+            "status_code": 0,
+            "container_image": settings.container_image,
+            "image_version": settings.image_version,
+            "message": "An unhandled exception occurred during health check."
+        }
 
 
 @app.websocket("/ws")
