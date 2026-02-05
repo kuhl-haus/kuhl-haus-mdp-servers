@@ -60,8 +60,6 @@ __pypackages__/
 
 /Build-Images.ps1
 compose.yaml
-dev_rabbitmq.Dockerfile
-dev_mdl.Dockerfile
-dev_mdp.Dockerfile
-dev_wds.Dockerfile
+/dev*.Dockerfile
 dev_requirements.txt
+

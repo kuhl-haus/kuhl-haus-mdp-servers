@@ -4,22 +4,17 @@ import os
 from contextlib import asynccontextmanager
 from typing import Dict, Union
 
-import redis.asyncio as aioredis
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
-from pydantic_settings import BaseSettings
-
-from massive.rest import RESTClient
-
-from kuhl_haus.mdp.analyzers.top_stocks import TopStocksAnalyzer
-from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
+from kuhl_haus.mdp.analyzers.leaderboard_analyzer import LeaderboardAnalyzer
 from kuhl_haus.mdp.components.market_data_cache import MarketDataCache
+from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
 from kuhl_haus.mdp.components.massive_data_processor import MassiveDataProcessor
-from kuhl_haus.mdp.enum.market_data_cache_keys import MarketDataCacheKeys
 from kuhl_haus.mdp.enum.market_data_scanner_names import MarketDataScannerNames
 from kuhl_haus.mdp.enum.massive_data_queue import MassiveDataQueue
-from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
+from kuhl_haus.mdp.helpers.utils import get_massive_api_key
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -56,12 +51,7 @@ market_data_cache: MarketDataCache = None
 market_data_scanners: Dict[str, MarketDataScanner] = {}
 massive_data_processors: Dict[str, MassiveDataProcessor] = {}
 massive_data_queues = [
-    MassiveDataQueue.TRADES.value,
     MassiveDataQueue.AGGREGATE.value,
-    MassiveDataQueue.QUOTES.value,
-    MassiveDataQueue.HALTS.value,
-    MassiveDataQueue.NEWS.value,
-    MassiveDataQueue.UNKNOWN.value,
 ]
 
 # Global process manager
@@ -84,17 +74,9 @@ async def lifespan(app: FastAPI):
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=queue,
             redis_url=settings.redis_url,
+            massive_api_key=settings.massive_api_key,
+            analyzer_class=LeaderboardAnalyzer
         )
-
-    # Start MarketDataScanners in separate processes
-    process_manager.start_worker(
-        name=f"scanner_{MarketDataScannerNames.TOP_STOCKS.value}",
-        worker_class=MarketDataScanner,
-        redis_url=settings.redis_url,
-        massive_api_key=settings.massive_api_key,
-        subscriptions=[f"{MarketDataCacheKeys.AGGREGATE.value}:*"],
-        analyzer_class=TopStocksAnalyzer,
-    )
 
     logger.info("Market Data Processor is running.")
 

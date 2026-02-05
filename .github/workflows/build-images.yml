@@ -106,6 +106,18 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and push LBA Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./lba.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-lba-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-lba-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Build and push WDS Docker image
         uses: docker/build-push-action@v5
         with:
