@@ -122,6 +122,9 @@ async def health_check(response: Response):
             "status_code": 1,
             "container_image": settings.container_image,
             "image_version": settings.image_version,
+            "parallelism": settings.parallelism,
+            "prefetch_count": settings.prefetch_count,
+            "max_concurrency": settings.max_concurrency,
         }
 
         # Non-blocking status collection
