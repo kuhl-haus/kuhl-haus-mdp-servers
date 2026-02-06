@@ -16,6 +16,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Number of parallel MassiveDataProcessors to run
     parallelism: int = os.environ.get("PARALLELISM", 1)
+    prefetch_count: int = os.environ.get("PREFETCH_COUNT", 10)
+    max_concurrency: int = os.environ.get("MAX_CONCURRENCY", 100)
 
     # Massive/Polygon.io API Key
     massive_api_key: str = get_massive_api_key()
@@ -33,11 +35,24 @@ class Settings(BaseSettings):
     container_image: str = os.environ.get("CONTAINER_IMAGE", "Unknown")
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
 
+    # Logging Formats
+    logging_format_json = ('{ '
+                           '"timestamp": "%(asctime)s", '
+                           '"filename": "%(filename)s", '
+                           '"function": "%(funcName)s", '
+                           '"line": "%(lineno)d", '
+                           '"level": "%(levelname)s", '
+                           '"pid": "%(process)d", '
+                           '"thr": "%(thread)d", '
+                           '"message": "%(message)s"'
+                           '}')
+    logging_format = os.environ.get("LOGGING_FORMAT", logging_format_json)
+
 
 settings = Settings()
 
 logging.root.setLevel(settings.log_level)
-logging.root.handlers[0].setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logging.root.handlers[0].setFormatter(logging.Formatter(settings.logging_format))
 logger = logging.getLogger(__name__)
 
 
@@ -67,8 +82,8 @@ async def lifespan(app: FastAPI):
             redis_url=settings.redis_url,
             massive_api_key=settings.massive_api_key,
             analyzer_class=LeaderboardAnalyzer,
-            prefetch_count=100,
-            max_concurrent_tasks=500,
+            prefetch_count=settings.prefetch_count,
+            max_concurrent_tasks=settings.max_concurrency,
         )
 
     logger.info("Leaderboard Analyzer is running.")

@@ -36,13 +36,25 @@ class Settings(BaseSettings):
     container_image: str = os.environ.get("CONTAINER_IMAGE", "Unknown")
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
 
+    # Logging Formats
+    # Logging Formats
+    logging_format_json = ('{ '
+                           '"timestamp": "%(asctime)s", '
+                           '"filename": "%(filename)s", '
+                           '"function": "%(funcName)s", '
+                           '"line": "%(lineno)d", '
+                           '"level": "%(levelname)s", '
+                           '"pid": "%(process)d", '
+                           '"thr": "%(thread)d", '
+                           '"message": "%(message)s"'
+                           '}')
+    logging_format = os.environ.get("LOGGING_FORMAT", logging_format_json)
+
 
 settings = Settings()
 
-logging.basicConfig(
-    level=settings.log_level,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.root.setLevel(settings.log_level)
+logging.root.handlers[0].setFormatter(logging.Formatter(settings.logging_format))
 logger = logging.getLogger(__name__)
 
 
