@@ -115,7 +115,7 @@ async def root():
 async def health_check(response: Response):
     """Health check endpoint - always responsive"""
     try:
-        ret: dict[str, Union[str, dict]] = {
+        ret: dict[str, Union[str, int, dict, list]] = {
             "service": "Market Data Processor",
             "status": "OK",
             "status_code": 1,
@@ -127,8 +127,13 @@ async def health_check(response: Response):
         }
 
         # Non-blocking status collection
+        processes = []
         for name in massive_data_processors:
-            ret[name] = process_manager.get_status(name)
+            status_dict = process_manager.get_status(name)
+            status_dict["name"] = name
+            processes.append(status_dict)
+            ret[name] = status_dict
+        ret["processes"] = processes
 
         return ret
 
