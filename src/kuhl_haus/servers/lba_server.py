@@ -1,7 +1,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Dict, Union
+from typing import List, Union
 
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global state
-massive_data_processors: Dict[str, MassiveDataProcessor] = {}
+massive_data_processors: List[str] = []
 
 
 # Global process manager
@@ -67,15 +67,17 @@ process_manager: ProcessManager = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
-    global process_manager
+    global process_manager, massive_data_processors
 
     logger.info("Starting Leaderboard Analyzer...")
     process_manager = ProcessManager()
 
     # Start MassiveDataProcessors in separate processes
     for i in range(settings.parallelism):
+        name = f"lba_{MassiveDataQueue.AGGREGATE.value}_{i}"
+        logger.info(f"Creating MassiveDataProcessor: {name}")
         process_manager.start_worker(
-            name=f"lba_{MassiveDataQueue.AGGREGATE.value}_{i}",
+            name=name,
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.AGGREGATE.value,
@@ -85,6 +87,7 @@ async def lifespan(app: FastAPI):
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
+        massive_data_processors.append(name)
 
     logger.info("Leaderboard Analyzer is running.")
 
@@ -122,8 +125,7 @@ async def health_check(response: Response):
         }
 
         # Non-blocking status collection
-        for i in range(settings.parallelism):
-            name = f"lba_{MassiveDataQueue.AGGREGATE.value}_{i}"
+        for name in massive_data_processors:
             ret[name] = process_manager.get_status(name)
 
         return ret

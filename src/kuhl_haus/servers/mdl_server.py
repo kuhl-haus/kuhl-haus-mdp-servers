@@ -35,11 +35,10 @@ class Settings(BaseSettings):
     secure: bool = os.environ.get("MASSIVE_SECURE", True)
 
     # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://redis:redis@localhost:6379/0")
+    redis_url: str = os.environ.get("REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
 
     # RabbitMQ Settings
-    rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://crow:crow@localhost:5672/")
-    rabbitmq_host: str = os.environ.get("RABBITMQ_API", "http://crow:crow@localhost:15672/api/")
+    rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
     message_ttl_ms: int = os.environ.get("MARKET_DATA_MESSAGE_TTL", 5000)  # 5 seconds in milliseconds
 
     # Server Settings
