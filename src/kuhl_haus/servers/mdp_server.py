@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Dict, Union, ClassVar
+from typing import Dict, Union
 
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
@@ -37,18 +37,17 @@ class Settings(BaseSettings):
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
 
     # Logging Formats
-    # Logging Formats
-    logging_format_json: ClassVar[str] = ('{ '
-                                          '"timestamp": "%(asctime)s", '
-                                          '"filename": "%(filename)s", '
-                                          '"function": "%(funcName)s", '
-                                          '"line": "%(lineno)d", '
-                                          '"level": "%(levelname)s", '
-                                          '"pid": "%(process)d", '
-                                          '"thr": "%(thread)d", '
-                                          '"message": "%(message)s"'
-                                          '}')
-    logging_format = os.environ.get("LOGGING_FORMAT", logging_format_json)
+    logging_format_json: str = ('{ '
+                                '"timestamp": "%(asctime)s", '
+                                '"filename": "%(filename)s", '
+                                '"function": "%(funcName)s", '
+                                '"line": "%(lineno)d", '
+                                '"level": "%(levelname)s", '
+                                '"pid": "%(process)d", '
+                                '"thr": "%(thread)d", '
+                                '"message": "%(message)s"'
+                                '}')
+    logging_format: str = os.environ.get("LOGGING_FORMAT", logging_format_json)
 
 
 settings = Settings()

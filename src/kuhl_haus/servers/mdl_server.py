@@ -3,7 +3,7 @@ import json
 import os
 from contextlib import asynccontextmanager
 from copy import copy
-from typing import ClassVar, Optional, List, Union
+from typing import Optional, List, Union
 
 from fastapi import FastAPI, Response, status
 from massive.websocket import Feed, Market
@@ -51,17 +51,17 @@ class Settings(BaseSettings):
     auto_start: bool = os.environ.get("MARKET_DATA_LISTENER_AUTO_START_ENABLED", False)
 
     # Logging Formats
-    logging_format_json: ClassVar[str] = ('{ '
-                                          '"timestamp": "%(asctime)s", '
-                                          '"filename": "%(filename)s", '
-                                          '"function": "%(funcName)s", '
-                                          '"line": "%(lineno)d", '
-                                          '"level": "%(levelname)s", '
-                                          '"pid": "%(process)d", '
-                                          '"thr": "%(thread)d", '
-                                          '"message": "%(message)s"'
-                                          '}')
-    logging_format = os.environ.get("LOGGING_FORMAT", logging_format_json)
+    logging_format_json: str = ('{ '
+                                '"timestamp": "%(asctime)s", '
+                                '"filename": "%(filename)s", '
+                                '"function": "%(funcName)s", '
+                                '"line": "%(lineno)d", '
+                                '"level": "%(levelname)s", '
+                                '"pid": "%(process)d", '
+                                '"thr": "%(thread)d", '
+                                '"message": "%(message)s"'
+                                '}')
+    logging_format: str = os.environ.get("LOGGING_FORMAT", logging_format_json)
 
 
 settings = Settings()

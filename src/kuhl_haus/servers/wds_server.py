@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Set, ClassVar
+from typing import Set
 
 import redis.asyncio as redis
 from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect, status
@@ -31,17 +31,17 @@ class Settings(BaseSettings):
     auth_api_key: str = os.environ.get("AUTH_API_KEY", "secret")
 
     # Logging Formats
-    logging_format_json: ClassVar[str] = ('{ '
-                                          '"timestamp": "%(asctime)s", '
-                                          '"filename": "%(filename)s", '
-                                          '"function": "%(funcName)s", '
-                                          '"line": "%(lineno)d", '
-                                          '"level": "%(levelname)s", '
-                                          '"pid": "%(process)d", '
-                                          '"thr": "%(thread)d", '
-                                          '"message": "%(message)s"'
-                                          '}')
-    logging_format = os.environ.get("LOGGING_FORMAT", logging_format_json)
+    logging_format_json: str = ('{ '
+                                '"timestamp": "%(asctime)s", '
+                                '"filename": "%(filename)s", '
+                                '"function": "%(funcName)s", '
+                                '"line": "%(lineno)d", '
+                                '"level": "%(levelname)s", '
+                                '"pid": "%(process)d", '
+                                '"thr": "%(thread)d", '
+                                '"message": "%(message)s"'
+                                '}')
+    logging_format: str = os.environ.get("LOGGING_FORMAT", logging_format_json)
 
 
 settings = Settings()
