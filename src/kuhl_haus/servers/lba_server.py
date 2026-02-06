@@ -128,13 +128,13 @@ async def health_check(response: Response):
         }
 
         # Non-blocking status collection
-        processes = []
+        processors = []
         for name in massive_data_processors:
             status_dict = process_manager.get_status(name)
             status_dict["name"] = name
-            processes.append(status_dict)
+            processors.append(status_dict)
             ret[name] = status_dict
-        ret["processes"] = processes
+        ret["processors"] = processors
 
         return ret
 
