@@ -133,7 +133,6 @@ async def health_check(response: Response):
             status_dict = process_manager.get_status(name)
             status_dict["name"] = name
             processors.append(status_dict)
-            ret[name] = status_dict
         ret["processors"] = processors
 
         return ret
