@@ -5,7 +5,10 @@ permissions:
 
 on:
   push:
-    branches: [ mainline ]
+    branches:
+      - mainline
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
