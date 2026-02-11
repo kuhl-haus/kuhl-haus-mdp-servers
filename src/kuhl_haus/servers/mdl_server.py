@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings
 
 from kuhl_haus.mdp.components.massive_data_queues import MassiveDataQueues
 from kuhl_haus.mdp.components.massive_data_listener import MassiveDataListener
+from kuhl_haus.mdp.helpers.structured_logging import setup_logging
 from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 
 
@@ -49,24 +50,10 @@ class Settings(BaseSettings):
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
     auto_start: bool = os.environ.get("MARKET_DATA_LISTENER_AUTO_START_ENABLED", False)
 
-    # Logging Formats
-    logging_format_json: str = ('{ '
-                                '"timestamp": "%(asctime)s", '
-                                '"filename": "%(filename)s", '
-                                '"function": "%(funcName)s", '
-                                '"line": "%(lineno)d", '
-                                '"level": "%(levelname)s", '
-                                '"pid": "%(process)d", '
-                                '"thr": "%(thread)d", '
-                                '"message": "%(message)s"'
-                                '}')
-    logging_format: str = os.environ.get("LOGGING_FORMAT", logging_format_json)
-
 
 settings = Settings()
 
-logging.root.setLevel(settings.log_level)
-logging.root.handlers[0].setFormatter(logging.Formatter(settings.logging_format))
+setup_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
 # Global state
@@ -83,14 +70,12 @@ async def lifespan(app: FastAPI):
     global massive_data_listener, massive_data_queues
 
     massive_data_queues = MassiveDataQueues(
-        logger=logger,
         rabbitmq_url=settings.rabbitmq_url,
         message_ttl=settings.message_ttl_ms,
     )
     await massive_data_queues.setup_queues()
 
     massive_data_listener = MassiveDataListener(
-        logger=logger,
         message_handler=massive_data_queues.handle_messages,
         api_key=settings.massive_api_key,
         feed=settings.feed,

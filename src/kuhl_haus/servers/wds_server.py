@@ -8,6 +8,7 @@ import redis.asyncio as redis
 from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from kuhl_haus.mdp.components.widget_data_service import WidgetDataService
+from kuhl_haus.mdp.helpers.structured_logging import setup_logging
 from pydantic_settings import BaseSettings
 
 
@@ -30,24 +31,10 @@ class Settings(BaseSettings):
     auth_enabled: bool = os.environ.get("AUTH_ENABLED", False)
     auth_api_key: str = os.environ.get("AUTH_API_KEY", "secret")
 
-    # Logging Formats
-    logging_format_json: str = ('{ '
-                                '"timestamp": "%(asctime)s", '
-                                '"filename": "%(filename)s", '
-                                '"function": "%(funcName)s", '
-                                '"line": "%(lineno)d", '
-                                '"level": "%(levelname)s", '
-                                '"pid": "%(process)d", '
-                                '"thr": "%(thread)d", '
-                                '"message": "%(message)s"'
-                                '}')
-    logging_format: str = os.environ.get("LOGGING_FORMAT", logging_format_json)
-
 
 settings = Settings()
 
-logging.root.setLevel(settings.log_level)
-logging.root.handlers[0].setFormatter(logging.Formatter(settings.logging_format))
+setup_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
 
