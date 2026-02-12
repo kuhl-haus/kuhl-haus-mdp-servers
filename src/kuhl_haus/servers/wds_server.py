@@ -9,6 +9,8 @@ from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from kuhl_haus.mdp.components.widget_data_service import WidgetDataService
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
+from kuhl_haus.servers.observability import get_tracer, get_meter
+
 from pydantic_settings import BaseSettings
 
 
@@ -41,6 +43,33 @@ logger = logging.getLogger(__name__)
 # Global service instance
 wds_service: WidgetDataService = None
 active_ws_clients: Set[WebSocket] = set()
+
+# Tracer for WebSocket clients
+tracer = get_tracer(__name__)
+
+# Metrics for WebSocket clients
+meter = get_meter(__name__)
+exception_counter = meter.create_counter(
+    name="wds.exceptions", description="Number of exceptions", unit="1"
+)
+unauthorized_exception_counter = meter.create_counter(
+    name="wds.unauthorized_exceptions", description="Number of unauthorized exceptions", unit="1"
+)
+disconnect_counter = meter.create_counter(
+    name="wds.disconnects", description="Number of disconnects", unit="1"
+)
+auth_counter = meter.create_counter(
+    name="wds.auth", description="Number of successful auth attempts", unit="1"
+)
+subscribe_counter = meter.create_counter(
+    name="wds.subscribe", description="Number of subscribe messages received", unit="1"
+)
+unsubscribe_counter = meter.create_counter(
+    name="wds.unsubscribe", description="Number of unsubscribe messages received", unit="1"
+)
+cache_request_counter = meter.create_counter(
+    name="wds.cache_get", description="Number of get_cache requests received", unit="1"
+)
 
 
 @asynccontextmanager
@@ -130,66 +159,77 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         if not authenticated:
             message = await websocket.receive_text()
-            data = json.loads(message)
-            action = data.get("action")
+            with tracer.start_as_current_span("wds.auth.process") as span:
+                span.set_attribute("message.type", "text")
+                span.set_attribute("message.size", len(message))
+                data = json.loads(message)
+                action = data.get("action")
 
-            if action == "auth":
-                api_key = data.get("api_key")
-                # NOTE: This service is designed for internal use and for a
-                # single-user. As such, authentication is optional and, if
-                # enabled, only supports a single API key, which is set in the
-                # AUTH_API_KEY environment variable. Adding support for
-                # user-specific API keys is non-trivial.
-                # At some point in the future, I may consider adding a more
-                # robust authentication system, but this is acceptable for now.
-                #
-                # [FEATURE] Support for user-specific API keys in Widget Data Service
-                # https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues/1
+                if action == "auth":
+                    api_key = data.get("api_key")
+                    # NOTE: This service is designed for internal use and for a
+                    # single-user. As such, authentication is optional and, if
+                    # enabled, only supports a single API key, which is set in the
+                    # AUTH_API_KEY environment variable. Adding support for
+                    # user-specific API keys is non-trivial.
+                    # At some point in the future, I may consider adding a more
+                    # robust authentication system, but this is acceptable for now.
+                    #
+                    # [FEATURE] Support for user-specific API keys in Widget Data Service
+                    # https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues/1
 
-                if api_key == settings.auth_api_key:
-                    authenticated = True
-                    logger.info(f"wds.ws.authenticated client_info:{client_info}")
-                    await websocket.send_json({"status": "authorized"})
-                    active_ws_clients.add(websocket)
+                    if api_key == settings.auth_api_key:
+                        authenticated = True
+                        auth_counter.add(1)
+                        logger.info(f"wds.ws.authenticated client_info:{client_info}")
+                        await websocket.send_json({"status": "authorized"})
+                        active_ws_clients.add(websocket)
+                    else:
+                        await websocket.send_json({"status": "invalid key"})
+                        await websocket.close()
+                        raise UnauthorizedException("Invalid API key")
                 else:
-                    await websocket.send_json({"status": "invalid key"})
+                    await websocket.send_json({"status": "unauthorized"})
                     await websocket.close()
-                    raise UnauthorizedException("Invalid API key")
-            else:
-                await websocket.send_json({"status": "unauthorized"})
-                await websocket.close()
-                raise UnauthorizedException("Unauthorized")
+                    raise UnauthorizedException("Unauthorized")
         while authenticated:
             message = await websocket.receive_text()
-            data = json.loads(message)
-            action = data.get("action")
+            with tracer.start_as_current_span("wds.message.process") as span:
+                span.set_attribute("message.type", "text")
+                span.set_attribute("message.size", len(message))
+                data = json.loads(message)
+                action = data.get("action")
 
-            if action == "subscribe":
-                feed = data.get("feed")
-                if feed:
-                    await wds_service.subscribe(feed, websocket)
-                    active_feeds.add(feed)
-                    await websocket.send_json({"status": "subscribed", "feed": feed})
+                if action == "subscribe":
+                    feed = data.get("feed")
+                    if feed:
+                        subscribe_counter.add(1)
+                        await wds_service.subscribe(feed, websocket)
+                        active_feeds.add(feed)
+                        await websocket.send_json({"status": "subscribed", "feed": feed})
 
-            elif action == "unsubscribe":
-                feed = data.get("feed")
-                if feed and feed in active_feeds:
-                    await wds_service.unsubscribe(feed, websocket)
-                    active_feeds.remove(feed)
-                    await websocket.send_json({"status": "unsubscribed", "feed": feed})
+                elif action == "unsubscribe":
+                    feed = data.get("feed")
+                    if feed and feed in active_feeds:
+                        unsubscribe_counter.add(1)
+                        await wds_service.unsubscribe(feed, websocket)
+                        active_feeds.remove(feed)
+                        await websocket.send_json({"status": "unsubscribed", "feed": feed})
 
-            elif action == "get":
-                cache_key = data.get("cache")
-                if cache_key:
-                    cached_data = await wds_service.get_cache(cache_key)
-                    await websocket.send_json({
-                        "cache": cache_key,
-                        "data": cached_data
-                    })
-            else:
-                await websocket.send_json({"status": "invalid action"})
+                elif action == "get":
+                    cache_key = data.get("cache")
+                    if cache_key:
+                        cache_request_counter.add(1)
+                        cached_data = await wds_service.get_cache(cache_key)
+                        await websocket.send_json({
+                            "cache": cache_key,
+                            "data": cached_data
+                        })
+                else:
+                    await websocket.send_json({"status": "invalid action"})
 
     except WebSocketDisconnect:
+        disconnect_counter.add(1)
         client_info = {
             "headers": json.dumps(websocket.headers.items()),
             "host": websocket.client.host,
@@ -199,6 +239,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await wds_service.disconnect(websocket)
 
     except UnauthorizedException:
+        unauthorized_exception_counter.add(1)
         client_info = {
             "headers": json.dumps(websocket.headers.items()),
             "host": websocket.client.host,
@@ -207,6 +248,7 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info(f"wds.ws.unauthorized client_info:{client_info}")
 
     except Exception as e:
+        exception_counter.add(1)
         logger.exception(f"wds.ws.unhandled_exception {repr(e)}", exc_info=True)
 
     finally:
