@@ -1,4 +1,4 @@
-kuhl-haus-mdp==0.2.13
+kuhl-haus-mdp==0.2.14
 aio-pika
 fastapi
 importlib_metadata
