@@ -14,9 +14,10 @@ COPY . /app/
 
 # Install in editable mode
 RUN pip install --no-cache-dir -e .
+RUN opentelemetry-bootstrap -a install
 
 EXPOSE 4201/tcp
-CMD ["uvicorn", "kuhl_haus.servers.mdp_server:app", \
+CMD ["opentelemetry-instrument", "uvicorn", "kuhl_haus.servers.mdp_server:app", \
      "--host", "0.0.0.0", \
      "--port", "4201", \
      "--timeout-keep-alive", "75", \

@@ -8,8 +8,6 @@ COPY requirements.txt /tmp/
 RUN pip install --no-cache-dir -r requirements.txt && \
     rm -f /tmp/requirements.txt
 
-RUN opentelemetry-bootstrap -a install
-
 WORKDIR /app
 
 COPY . /app/

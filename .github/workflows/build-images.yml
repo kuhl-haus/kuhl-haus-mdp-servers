@@ -72,19 +72,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push MDP Server Base Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./base.Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server-base:${{ env.IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server-base:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
+      # MDL images
       - name: Build and push MDL Docker image
         uses: docker/build-push-action@v5
         with:
@@ -97,6 +85,20 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and push MDL (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./mdl_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdl-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # MDP images
       - name: Build and push MDP Docker image
         uses: docker/build-push-action@v5
         with:
@@ -109,6 +111,20 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and push MDP (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./mdp_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # LBA images
       - name: Build and push LBA Docker image
         uses: docker/build-push-action@v5
         with:
@@ -121,6 +137,20 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-lba-server:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and push LBA (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./lba_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-lba-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-lba-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # WDS images
       - name: Build and push WDS Docker image
         uses: docker/build-push-action@v5
         with:
@@ -131,5 +161,31 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-server:${{ env.IMAGE_TAG }}
             ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push WDS (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./wds_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-wds-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Server Base image
+      - name: Build and push MDP Server Base Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./base.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server-base:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mdp-server-base:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

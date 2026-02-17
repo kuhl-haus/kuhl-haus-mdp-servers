@@ -14,6 +14,7 @@ COPY . /app/
 
 # Install in editable mode
 RUN pip install --no-cache-dir -e .
+RUN opentelemetry-bootstrap -a install
 
-EXPOSE 4200/tcp
-CMD ["uvicorn", "kuhl_haus.servers.mdl_server:app", "--host", "0.0.0.0", "--port", "4200"]
+EXPOSE 4202/tcp
+CMD ["opentelemetry-instrument", "uvicorn", "kuhl_haus.servers.wds_server:app", "--host", "0.0.0.0", "--port", "4202"]
