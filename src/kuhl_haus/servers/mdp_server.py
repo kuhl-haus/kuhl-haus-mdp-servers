@@ -6,6 +6,8 @@ from typing import List, Union
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
 from kuhl_haus.mdp.analyzers.leaderboard_analyzer import LeaderboardAnalyzer
+from kuhl_haus.mdp.analyzers.massive_data_analyzer import MassiveDataAnalyzer
+from kuhl_haus.mdp.analyzers.top_trades_analyzer import TopTradesAnalyzer
 from kuhl_haus.mdp.components.massive_data_processor import MassiveDataProcessor
 from kuhl_haus.mdp.enum.massive_data_queue import MassiveDataQueue
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
@@ -43,8 +45,13 @@ setup_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
 
-# Global state
-massive_data_processors: List[str] = []
+# Global state - processors grouped by queue type
+massive_data_processors: dict[str, List[str]] = {
+    MassiveDataQueue.AGGREGATE.value: [],
+    MassiveDataQueue.TRADES.value: [],
+    MassiveDataQueue.QUOTES.value: [],
+    MassiveDataQueue.HALTS.value: [],
+}
 
 # Global process manager
 process_manager: ProcessManager = None
@@ -73,7 +80,55 @@ async def lifespan(app: FastAPI):
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
-        massive_data_processors.append(name)
+        massive_data_processors[MassiveDataQueue.AGGREGATE.value].append(name)
+
+    for i in range(settings.parallelism):
+        name = f"mdp_{MassiveDataQueue.TRADES.value}_{i}"
+        logger.info(f"Creating MassiveDataProcessor: {name}")
+        process_manager.start_worker(
+            name=name,
+            worker_class=MassiveDataProcessor,
+            rabbitmq_url=settings.rabbitmq_url,
+            queue_name=MassiveDataQueue.TRADES.value,
+            redis_url=settings.redis_url,
+            massive_api_key=settings.massive_api_key,
+            analyzer_class=TopTradesAnalyzer,
+            prefetch_count=settings.prefetch_count,
+            max_concurrent_tasks=settings.max_concurrency,
+        )
+        massive_data_processors[MassiveDataQueue.TRADES.value].append(name)
+
+    for i in range(settings.parallelism):
+        name = f"mdp_{MassiveDataQueue.QUOTES.value}_{i}"
+        logger.info(f"Creating MassiveDataProcessor: {name}")
+        process_manager.start_worker(
+            name=name,
+            worker_class=MassiveDataProcessor,
+            rabbitmq_url=settings.rabbitmq_url,
+            queue_name=MassiveDataQueue.QUOTES.value,
+            redis_url=settings.redis_url,
+            massive_api_key=settings.massive_api_key,
+            analyzer_class=MassiveDataAnalyzer,
+            prefetch_count=settings.prefetch_count,
+            max_concurrent_tasks=settings.max_concurrency,
+        )
+        massive_data_processors[MassiveDataQueue.QUOTES.value].append(name)
+
+    # Halts are low-volume and can be handled by a single processor
+    name = f"mdp_{MassiveDataQueue.HALTS.value}_{0}"
+    logger.info(f"Creating MassiveDataProcessor: {name}")
+    process_manager.start_worker(
+        name=name,
+        worker_class=MassiveDataProcessor,
+        rabbitmq_url=settings.rabbitmq_url,
+        queue_name=MassiveDataQueue.HALTS.value,
+        redis_url=settings.redis_url,
+        massive_api_key=settings.massive_api_key,
+        analyzer_class=MassiveDataAnalyzer,
+        prefetch_count=settings.prefetch_count,
+        max_concurrent_tasks=settings.max_concurrency,
+    )
+    massive_data_processors[MassiveDataQueue.HALTS.value].append(name)
 
     logger.info("Market Data Processor is running.")
 
@@ -113,13 +168,11 @@ async def health_check(response: Response):
             "max_concurrency": settings.max_concurrency,
         }
 
-        # Non-blocking status collection
-        processors = []
-        for name in massive_data_processors:
-            status_dict = process_manager.get_status(name)
-            status_dict["name"] = name
-            processors.append(status_dict)
-        ret["processors"] = processors
+        # Non-blocking status collection grouped by queue type
+        for queue_type, processor_names in massive_data_processors.items():
+            ret[f"{queue_type}_processors"] = [
+                process_manager.get_status(name) for name in processor_names
+            ]
 
         return ret
 
