@@ -29,7 +29,6 @@ dependencies = [
     "massive",
     "opentelemetry-api",
     "opentelemetry-sdk",
-    "opentelemetry-distro",
     "opentelemetry-exporter-otlp"
 ]
 

@@ -1,4 +1,4 @@
-kuhl-haus-mdp==0.2.14
+kuhl-haus-mdp==0.2.15
 aio-pika
 fastapi
 importlib_metadata
@@ -9,7 +9,3 @@ redis
 tenacity
 uvicorn[standard]
 websockets
-opentelemetry-api
-opentelemetry-distro
-opentelemetry-exporter-otlp
-opentelemetry-sdk
