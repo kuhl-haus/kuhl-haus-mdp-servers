@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     # RabbitMQ Settings
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
     message_ttl_ms: int = os.environ.get("MARKET_DATA_MESSAGE_TTL", 5000)  # 5 seconds in milliseconds
+    publisher_confirms: bool = os.getenv("MDQ_PUBLISHER_CONFIRMS", "true").lower() == "true"
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -72,6 +73,7 @@ async def lifespan(app: FastAPI):
     massive_data_queues = MassiveDataQueues(
         rabbitmq_url=settings.rabbitmq_url,
         message_ttl=settings.message_ttl_ms,
+        publisher_confirms=settings.publisher_confirms,
     )
     await massive_data_queues.setup_queues()
 
