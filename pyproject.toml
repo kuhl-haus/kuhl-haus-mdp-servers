@@ -26,10 +26,7 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic-settings",
     "python-dotenv",
-    "massive",
-    "opentelemetry-api",
-    "opentelemetry-sdk",
-    "opentelemetry-exporter-otlp"
+    "massive"
 ]
 
 [project.urls]

@@ -6,9 +6,9 @@ COPY requirements.txt /tmp/
 
 # Install requirements
 RUN pip install --no-cache-dir -r requirements.txt && \
-    rm -f /tmp/requirements.txt \
+    rm -f /tmp/requirements.txt
 
-RUN pip install --no-cache-dir opentelemetry-distro
+RUN pip install opentelemetry-distro
 
 WORKDIR /app
 
