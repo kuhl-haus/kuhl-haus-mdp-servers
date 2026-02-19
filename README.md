@@ -13,13 +13,36 @@
 
 
 # kuhl-haus-mdp-servers
-Container image build repository for market data processing servers
+Container image build repository for market data platform data plane servers
 
-## TL;DR
-Non-business Massive (AKA Polygon.IO) accounts are limited to a single WebSocket connection per asset class and it has to be fast enough to handle messages in a non-blocking fashion or it'll get disconnected.  The market data processing pipeline consists of loosely-coupled market data processing components so that a single WebSocket connection can handle messages fast enough to maintain a reliable connection with the market data provider.
+## Overview
 
-Per, https://massive.com/docs/websocket/quickstart#connecting-to-the-websocket:
-> *By default, one concurrent WebSocket connection per asset class is allowed. If you require multiple simultaneous connections for the same asset class, please [contact support](https://massive.com/contact).*
+The Kuhl Haus Market Data Platform (MDP) is a distributed system for collecting, processing, and serving real-time market data. Built on Kubernetes and leveraging microservices architecture, MDP provides scalable infrastructure for financial data analysis and visualization.
+
+### Architecture
+
+The platform consists of four main packages:
+- **Market data processing library** ([`kuhl-haus-mdp`](https://github.com/kuhl-haus/kuhl-haus-mdp)) - Core library with shared data processing logic
+- **Backend Services** ([`kuhl-haus-mdp-servers`](https://github.com/kuhl-haus/kuhl-haus-mdp-servers)) - Market data listener, processor, and widget service
+- **Frontend Application** ([`kuhl-haus-mdp-app`](https://github.com/kuhl-haus/kuhl-haus-mdp-app)) - Web-based user interface and API
+- **Deployment Automation** ([`kuhl-haus-mdp-deployment`](https://github.com/kuhl-haus/kuhl-haus-mdp-deployment)) - Docker Compose, Ansible playbooks and Kubernetes manifests for environment provisioning
+
+### Key Features
+
+- Real-time market data ingestion and processing
+- Scalable microservices architecture
+- Automated deployment with Ansible and Kubernetes
+- Multi-environment support (development, staging, production)
+- OAuth integration for secure authentication
+- Redis-based caching layer for performance
+
+### Additional Resources
+
+📖 **Blog Series:**
+- [Part 1: Why I Built It](https://the.oldschool.engineer/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-28fc3b6d9be0)
+- [Part 2: How to Run It](https://the.oldschool.engineer/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-2-94e445914951)
+- [Part 3: How to Deploy It](https://the.oldschool.engineer/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-3-eab7d9bbf5f7)
+- [Part 4: Evolution from Prototype to Production](https://the.oldschool.engineer/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-4-408779a1f3f2)
 
 # Components Summary
 
@@ -34,6 +57,12 @@ The MDL performs minimal processing on the messages.  MDL inspects the message t
 
 MDL runs as a container and scales independently of other components. The MDL should not be accessible outside the data plane local network.
 
+### Code Libraries
+- **`MassiveDataListener`** (`components/massive_data_listener.py`) - WebSocket client wrapper for Massive.com with persistent connection management and market-aware reconnection logic
+- **`MassiveDataQueues`** (`components/massive_data_queues.py`) - Multi-channel RabbitMQ publisher routing messages by event type with concurrent batch publishing (100 msg/frame)
+- **`WebSocketMessageSerde`** (`helpers/web_socket_message_serde.py`) - Serialization/deserialization for Massive WebSocket messages to/from JSON
+- **`QueueNameResolver`** (`helpers/queue_name_resolver.py`) - Event type to queue name routing logic
+
 ## Market Data Queues (MDQ)
 
 **Purpose:** Buffer high-velocity market data stream for server-side processing with aggressive freshness controls
@@ -46,16 +75,31 @@ MDL runs as a container and scales independently of other components. The MDL sh
 
 The MDQ should not be accessible outside the data plane local network.
 
+### Code Libraries
+- **`MassiveDataQueues`** (`components/massive_data_queues.py`) - Queue setup, per-queue channel management, and message publishing with NOT_PERSISTENT delivery mode
+- **`MassiveDataQueue`** enum (`enum/massive_data_queue.py`) - Queue name constants for routing (AGGREGATE, TRADES, QUOTES, HALTS, UNKNOWN)
+
 ## Market Data Processors (MDP)
 The purpose of the MDP is to process raw real-time market data and delegate processing to data-specific handlers.  This separation of concerns allows MDPs to handle any type of data and simplifies horizontal scaling.  The MDP stores its processed results in the Market Data Cache (MDC).
 
 The MDP:
 - Hydrates the in-memory cache on MDC
-- Processes market data 
+- Processes market data
 - Publishes messages to pub/sub channels
 - Maintains cache entries in MDC
 
 MDPs runs as containers and scale independently of other components. The MDPs should not be accessible outside the data plane local network.
+
+### Code Libraries
+- **`MassiveDataProcessor`** (`components/massive_data_processor.py`) - RabbitMQ consumer with semaphore-based concurrency control for high-throughput scenarios (1,000+ events/sec)
+- **`MarketDataScanner`** (`components/market_data_scanner.py`) - Redis pub/sub consumer with pluggable analyzer pattern for sequential message processing
+- **Analyzers** (`analyzers/`)
+  - **`MassiveDataAnalyzer`** (`massive_data_analyzer.py`) - Stateless event router dispatching by event type
+  - **`LeaderboardAnalyzer`** (`leaderboard_analyzer.py`) - Redis sorted set leaderboards (volume, gappers, gainers) with day/market boundary resets and distributed throttling
+  - **`TopTradesAnalyzer`** (`top_trades_analyzer.py`) - Redis List-based trade history with sliding window (last 1,000 trades/symbol) and aggregated statistics
+  - **`TopStocksAnalyzer`** (`top_stocks.py`) - In-memory leaderboard prototype (legacy, single-instance)
+- **`MarketDataAnalyzerResult`** (`data/market_data_analyzer_result.py`) - Result envelope for analyzer output with cache/publish metadata
+- **`ProcessManager`** (`helpers/process_manager.py`) - Multiprocess orchestration for async workers with OpenTelemetry context propagation
 
 ## Market Data Cache (MDC)
 
@@ -66,6 +110,12 @@ MDPs runs as containers and scale independently of other components. The MDPs sh
 
 The MDC should not be accessible outside the data plane local network.
 
+### Code Libraries
+- **`MarketDataCache`** (`components/market_data_cache.py`) - Redis cache-aside layer for Massive.com API with TTL policies, negative caching, and specialized metric methods (snapshot, avg volume, free float)
+- **`MarketDataCacheKeys`** enum (`enum/market_data_cache_keys.py`) - Internal Redis cache key patterns and templates
+- **`MarketDataCacheTTL`** enum (`enum/market_data_cache_ttl.py`) - TTL values balancing freshness vs. API quotas vs. memory pressure (5s for trades, 24h for reference data)
+- **`MarketDataPubSubKeys`** enum (`enum/market_data_pubsub_keys.py`) - Redis pub/sub channel names for external consumption
+
 ## Widget Data Service (WDS)
 **Purpose**:
 1. WebSocket interface provides access to processed market data for client-side code
@@ -73,9 +123,12 @@ The MDC should not be accessible outside the data plane local network.
 
 WDS runs as a container and scales independently of other components.  WDS is the only data plane component that should be exposed to client networks.
 
+### Code Libraries
+- **`WidgetDataService`** (`components/widget_data_service.py`) - WebSocket-to-Redis bridge with fan-out pattern, lazy task initialization, wildcard subscription support, and lock-protected subscription management
+- **`MarketDataCache`** (`components/market_data_cache.py`) - Snapshot retrieval for initial state before streaming
 
 ## Service Control Plane (SCP)
-**Purpose**: 
+**Purpose**:
 1. Authentication and authorization
 2. Serve static and dynamic content via py4web
 3. Serve SPA to authenticated clients
@@ -84,4 +137,11 @@ WDS runs as a container and scales independently of other components.  WDS is th
 6. API for programmatic access to service controls and instrumentation.
 
 The SCP requires access to the data plane network for API access to data plane components.
+
+The SCP code is in the [kuhl-haus/kuhl-haus-mdp-app](https://github.com/kuhl-haus/kuhl-haus-mdp-app) repo.
+
+## Miscellaneous Code Libraries
+- **`Observability`** (`helpers/observability.py`) - OpenTelemetry tracer/meter factory for distributed tracing and metrics
+- **`StructuredLogging`** (`helpers/structured_logging.py`) - JSON logging for K8s/OpenObserve with dev mode support
+- **`Utils`** (`helpers/utils.py`) - API key resolution (MASSIVE_API_KEY → POLYGON_API_KEY → file) and TickerSnapshot serialization
 
