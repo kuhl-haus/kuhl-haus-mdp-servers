@@ -9,7 +9,7 @@ description = "Container image build repository for market data processing serve
 authors = [
     { name = "Tom Pounders", email = "git@oldschool.engineer" },
 ]
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.14"
 license-files = ["LICENSE.txt"]
 classifiers = [
