@@ -114,21 +114,21 @@ async def lifespan(app: FastAPI):
         )
         massive_data_processors[MassiveDataQueue.QUOTES.value].append(name)
 
-    # Halts are low-volume and can be handled by a single processor
-    name = f"mdp_{MassiveDataQueue.HALTS.value}_{0}"
-    logger.info(f"Creating MassiveDataProcessor: {name}")
-    process_manager.start_worker(
-        name=name,
-        worker_class=MassiveDataProcessor,
-        rabbitmq_url=settings.rabbitmq_url,
-        queue_name=MassiveDataQueue.HALTS.value,
-        redis_url=settings.redis_url,
-        massive_api_key=settings.massive_api_key,
-        analyzer_class=MassiveDataAnalyzer,
-        prefetch_count=settings.prefetch_count,
-        max_concurrent_tasks=settings.max_concurrency,
-    )
-    massive_data_processors[MassiveDataQueue.HALTS.value].append(name)
+    for i in range(settings.parallelism):
+        name = f"mdp_{MassiveDataQueue.HALTS.value}_{i}"
+        logger.info(f"Creating MassiveDataProcessor: {name}")
+        process_manager.start_worker(
+            name=name,
+            worker_class=MassiveDataProcessor,
+            rabbitmq_url=settings.rabbitmq_url,
+            queue_name=MassiveDataQueue.HALTS.value,
+            redis_url=settings.redis_url,
+            massive_api_key=settings.massive_api_key,
+            analyzer_class=MassiveDataAnalyzer,
+            prefetch_count=settings.prefetch_count,
+            max_concurrent_tasks=settings.max_concurrency,
+        )
+        massive_data_processors[MassiveDataQueue.HALTS.value].append(name)
 
     logger.info("Market Data Processor is running.")
 
