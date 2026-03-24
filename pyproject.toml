@@ -49,6 +49,7 @@ testing = [
 
 [project.scripts]
 fdl_server = "kuhl_haus.servers.fdl_server:app"
+fdp_server = "kuhl_haus.servers.fdp_server:app"
 lba_server = "kuhl_haus.servers.lba_server:app"
 mdl_server = "kuhl_haus.servers.mdl_server:app"
 mdp_server = "kuhl_haus.servers.mdp_server:app"
