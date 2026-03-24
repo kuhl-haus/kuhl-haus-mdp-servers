@@ -9,6 +9,7 @@ on:
       - mainline
     tags:
       - 'v*'
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -50,6 +51,7 @@ jobs:
   build-docker:
     name: Build Docker Image
     needs: build-and-test
+    if: github.event_name != 'pull_request'  # skip Docker build on PRs
     runs-on: ubuntu-latest
 
     permissions:
