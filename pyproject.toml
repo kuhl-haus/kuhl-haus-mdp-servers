@@ -41,7 +41,9 @@ testing = [
     "setuptools",
     "pdm-backend",
     "pytest",
+    "pytest-asyncio",
     "pytest-cov",
+    "httpx",
 ]
 
 [project.scripts]
@@ -71,6 +73,7 @@ includes = ["src/kuhl_haus"]
 
 [tool.pytest.ini_options]
 addopts = ["--verbose"]
+asyncio_mode = "auto"
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
 
