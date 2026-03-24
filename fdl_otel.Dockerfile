@@ -18,5 +18,5 @@ COPY . /app/
 RUN pip install --no-cache-dir -e .
 RUN opentelemetry-bootstrap -a install
 
-EXPOSE 4200/tcp
-CMD ["opentelemetry-instrument", "uvicorn", "kuhl_haus.servers.fdl_server:app", "--host", "0.0.0.0", "--port", "4200"]
+EXPOSE 4203/tcp
+CMD ["opentelemetry-instrument", "uvicorn", "kuhl_haus.servers.fdl_server:app", "--host", "0.0.0.0", "--port", "4203"]
