@@ -8,6 +8,7 @@ Run:
     pytest tests/servers/test_fdl_server.py -v
 """
 import pytest
+from asgi_lifespan import LifespanManager
 from copy import copy
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from httpx import AsyncClient, ASGITransport
@@ -130,18 +131,19 @@ def _make_raising_listener() -> object:
 async def client():
     """AsyncClient with FDQ connected and listener idle (not connected).
 
-    Lifespan runs on context entry; mocked components prevent real I/O.
+    LifespanManager triggers FastAPI lifespan; mocked components prevent real I/O.
     """
     mock_fdq = _make_mock_fdq(connected=True)
     mock_listener = _make_mock_listener(connected=False)
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener):
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as ac:
-            yield ac, mock_fdq, mock_listener
+        async with LifespanManager(app):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as ac:
+                yield ac, mock_fdq, mock_listener
 
 
 @pytest.fixture
@@ -152,11 +154,12 @@ async def client_both_connected():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener):
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as ac:
-            yield ac, mock_fdq, mock_listener
+        async with LifespanManager(app):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as ac:
+                yield ac, mock_fdq, mock_listener
 
 
 @pytest.fixture
@@ -167,11 +170,12 @@ async def client_fdq_disconnected():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener):
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as ac:
-            yield ac, mock_fdq, mock_listener
+        async with LifespanManager(app):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as ac:
+                yield ac, mock_fdq, mock_listener
 
 
 # ---------------------------------------------------------------------------
@@ -236,8 +240,9 @@ async def test_fdl_lifespan_with_default_settings_expect_fdq_created_and_setup()
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq) as mock_fdq_cls, \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener):
         # Act — AsyncClient context entry triggers lifespan startup
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
-            pass
+        async with LifespanManager(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
+                pass
 
     # Assert
     mock_fdq_cls.assert_called_once()
@@ -252,8 +257,9 @@ async def test_fdl_lifespan_with_default_settings_expect_fdl_created_with_messag
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener) as mock_fdl_cls:
         # Act
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
-            pass
+        async with LifespanManager(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
+                pass
 
     # Assert — listener instantiated; handle_message wired as the message handler
     mock_fdl_cls.assert_called_once()
@@ -270,8 +276,9 @@ async def test_fdl_lifespan_with_auto_start_disabled_expect_listener_start_not_c
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener), \
          patch.object(settings, "auto_start", False):
         # Act
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
-            pass
+        async with LifespanManager(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
+                pass
 
     # Assert
     mock_listener.start.assert_not_awaited()
@@ -286,8 +293,9 @@ async def test_fdl_lifespan_with_auto_start_enabled_expect_listener_start_called
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener), \
          patch.object(settings, "auto_start", True):
         # Act
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
-            pass
+        async with LifespanManager(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
+                pass
 
     # Assert
     mock_listener.start.assert_awaited_once()
@@ -305,8 +313,9 @@ async def test_fdl_lifespan_shutdown_expect_listener_stop_and_fdq_shutdown_calle
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=mock_listener):
         # Act — context exit triggers lifespan shutdown
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
-            pass
+        async with LifespanManager(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test"):
+                pass
 
     # Assert — stop (from stop_websocket_client helper) and shutdown both called
     mock_listener.stop.assert_awaited()
@@ -483,7 +492,8 @@ async def test_fdl_query_with_listener_error_expect_settings_rolled_back():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=raising_listener):
-        async with AsyncClient(
+        async with LifespanManager(app):
+         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             try:
@@ -527,7 +537,8 @@ async def test_fdl_tickers_with_listener_error_expect_settings_rolled_back():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=raising_listener):
-        async with AsyncClient(
+        async with LifespanManager(app):
+         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             try:
@@ -571,7 +582,8 @@ async def test_fdl_sources_with_listener_error_expect_settings_rolled_back():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=raising_listener):
-        async with AsyncClient(
+        async with LifespanManager(app):
+         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             try:
@@ -615,7 +627,8 @@ async def test_fdl_language_with_listener_error_expect_settings_rolled_back():
 
     with patch(f"{MODULE}.FinlightDataQueues", return_value=mock_fdq), \
          patch(f"{MODULE}.FinlightDataListener", return_value=raising_listener):
-        async with AsyncClient(
+        async with LifespanManager(app):
+         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as ac:
             try:

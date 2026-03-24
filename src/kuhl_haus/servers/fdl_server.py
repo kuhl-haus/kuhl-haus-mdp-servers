@@ -1,11 +1,11 @@
-import logging
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
 from copy import copy
 from typing import Optional, List
 
-from fastapi import FastAPI, Response, Body, status
+from fastapi import FastAPI, Response, status
 from pydantic_settings import BaseSettings
 
 from kuhl_haus.mdp.components.finlight_data_queues import FinlightDataQueues
@@ -17,24 +17,25 @@ class Settings(BaseSettings):
     # Finlight API Key
     finlight_api_key: str = os.environ.get("FINLIGHT_API_KEY", "")
 
-    # Finlight Query Settings
+    # Finlight filter settings
     finlight_query: Optional[str] = os.environ.get("FINLIGHT_QUERY", None)
     finlight_tickers: Optional[List[str]] = (
-        json.loads(os.environ.get("FINLIGHT_TICKERS"))
+        json.loads(os.environ.get("FINLIGHT_TICKERS", "null"))
         if os.environ.get("FINLIGHT_TICKERS")
         else None
     )
     finlight_sources: Optional[List[str]] = (
-        json.loads(os.environ.get("FINLIGHT_SOURCES"))
+        json.loads(os.environ.get("FINLIGHT_SOURCES", "null"))
         if os.environ.get("FINLIGHT_SOURCES")
         else None
     )
     finlight_language: Optional[str] = os.environ.get("FINLIGHT_LANGUAGE", None)
     finlight_raw: bool = os.environ.get("FINLIGHT_RAW", False)
+    max_reconnects: Optional[int] = os.environ.get("FINLIGHT_MAX_RECONNECTS", 5)
 
     # RabbitMQ Settings
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
-    message_ttl_ms: int = os.environ.get("MARKET_DATA_MESSAGE_TTL", 5000)  # 5 seconds in milliseconds
+    message_ttl_ms: int = os.environ.get("MARKET_DATA_MESSAGE_TTL", 5000)
     publisher_confirms: bool = os.getenv("MDQ_PUBLISHER_CONFIRMS", "true").lower() == "true"
 
     # Server Settings
@@ -79,7 +80,7 @@ async def lifespan(app: FastAPI):
         sources=settings.finlight_sources,
         language=settings.finlight_language,
         raw=settings.finlight_raw,
-        max_reconnects=5,
+        max_reconnects=settings.max_reconnects,
     )
     logger.info("Finlight Data Listener is ready.")
 
@@ -97,115 +98,77 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Finlight Data Listener",
-    description="Connects to Finlight news provider and publishes to event-specific queues",
+    description="Connects to Finlight news stream and publishes articles to RabbitMQ queue",
     lifespan=lifespan,
 )
 
-# ---------------------------------------------------------------------------
-# Test support: httpx.AsyncClient + ASGITransport does not send ASGI lifespan
-# events (scope["type"] == "lifespan"). Monkeypatch ASGITransport.__aenter__
-# and __aexit__ so that entering/exiting the AsyncClient context runs the
-# lifespan startup and shutdown for this specific app, matching production
-# behaviour under real ASGI servers like uvicorn.
-# ---------------------------------------------------------------------------
-_fdl_lifespan_contexts: dict = {}
-
-try:
-    from httpx import ASGITransport as _HttpxASGITransport
-
-    async def _fdl_asgi_aenter(self):
-        if self.app is app:
-            cm = lifespan(app)
-            _fdl_lifespan_contexts[id(self)] = cm
-            try:
-                await cm.__aenter__()
-            except Exception:
-                _fdl_lifespan_contexts.pop(id(self), None)
-                raise
-        return self
-
-    async def _fdl_asgi_aexit(self, exc_type, exc_val, exc_tb):
-        if id(self) in _fdl_lifespan_contexts:
-            cm = _fdl_lifespan_contexts.pop(id(self))
-            await cm.__aexit__(exc_type, exc_val, exc_tb)
-        await self.aclose()
-
-    _HttpxASGITransport.__aenter__ = _fdl_asgi_aenter
-    _HttpxASGITransport.__aexit__ = _fdl_asgi_aexit
-except ImportError:
-    pass  # httpx not installed (production environment); lifespan runs via uvicorn
-
 
 @app.post("/query")
-async def update_query(query: str):
-    """Update Finlight query filter"""
-    original = copy(settings.finlight_query)
-    logger.info(f"Original query: {original}")
+async def query(query: str):
+    """Update Finlight article query filter"""
+    original_query = copy(settings.finlight_query)
+    logger.info(f"Original query: {original_query}")
     try:
         settings.finlight_query = query
         finlight_data_listener.query = query
         logger.info(f"Query updated to: {query}")
     except Exception as e:
         logger.error(f"Error setting query: {e}")
-        logger.error(f"Restoring query to: {original}")
-        settings.finlight_query = original
-        finlight_data_listener.query = original
+        logger.error(f"Restoring query to: {original_query}")
+        settings.finlight_query = original_query
+        finlight_data_listener.query = original_query
         logger.error("Rollback complete")
-    return {"query": settings.finlight_query}
 
 
 @app.post("/tickers")
-async def update_tickers(tickers_list: List[str] = Body(...)):
+async def tickers(tickers_list: List[str]):
     """Update Finlight ticker filter"""
-    original = copy(settings.finlight_tickers)
-    logger.info(f"Original tickers: {original}")
+    original_tickers = copy(settings.finlight_tickers)
+    logger.info(f"Original tickers: {original_tickers}")
     try:
         settings.finlight_tickers = tickers_list
         finlight_data_listener.tickers = tickers_list
         logger.info(f"Tickers updated to: {tickers_list}")
     except Exception as e:
         logger.error(f"Error setting tickers: {e}")
-        logger.error(f"Restoring tickers to: {original}")
-        settings.finlight_tickers = original
-        finlight_data_listener.tickers = original
+        logger.error(f"Restoring tickers to: {original_tickers}")
+        settings.finlight_tickers = original_tickers
+        finlight_data_listener.tickers = original_tickers
         logger.error("Rollback complete")
-    return {"tickers": settings.finlight_tickers}
 
 
 @app.post("/sources")
-async def update_sources(sources_list: List[str] = Body(...)):
-    """Update Finlight news sources filter"""
-    original = copy(settings.finlight_sources)
-    logger.info(f"Original sources: {original}")
+async def sources(sources_list: List[str]):
+    """Update Finlight news source filter"""
+    original_sources = copy(settings.finlight_sources)
+    logger.info(f"Original sources: {original_sources}")
     try:
         settings.finlight_sources = sources_list
         finlight_data_listener.sources = sources_list
         logger.info(f"Sources updated to: {sources_list}")
     except Exception as e:
         logger.error(f"Error setting sources: {e}")
-        logger.error(f"Restoring sources to: {original}")
-        settings.finlight_sources = original
-        finlight_data_listener.sources = original
+        logger.error(f"Restoring sources to: {original_sources}")
+        settings.finlight_sources = original_sources
+        finlight_data_listener.sources = original_sources
         logger.error("Rollback complete")
-    return {"sources": settings.finlight_sources}
 
 
 @app.post("/language")
-async def update_language(language: str):
+async def language(language: str):
     """Update Finlight language filter"""
-    original = copy(settings.finlight_language)
-    logger.info(f"Original language: {original}")
+    original_language = copy(settings.finlight_language)
+    logger.info(f"Original language: {original_language}")
     try:
         settings.finlight_language = language
         finlight_data_listener.language = language
         logger.info(f"Language updated to: {language}")
     except Exception as e:
         logger.error(f"Error setting language: {e}")
-        logger.error(f"Restoring language to: {original}")
-        settings.finlight_language = original
-        finlight_data_listener.language = original
+        logger.error(f"Restoring language to: {original_language}")
+        settings.finlight_language = original_language
+        finlight_data_listener.language = original_language
         logger.error("Rollback complete")
-    return {"language": settings.finlight_language}
 
 
 @app.get("/start")

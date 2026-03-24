@@ -44,6 +44,7 @@ testing = [
     "pytest-asyncio",
     "pytest-cov",
     "httpx",
+    "asgi-lifespan",
 ]
 
 [project.scripts]
