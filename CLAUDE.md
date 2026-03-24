@@ -19,7 +19,8 @@ Container image build repository for the Kuhl Haus Market Data Platform (MDP) da
 
 | Server | Acronym | Role |
 |---|---|---|
-| Finlight Data Listener | FDL | WebSocket client → Finlight news API; routes articles to RabbitMQ with minimal processing |
+| Finlight Data Listener | FDL | WebSocket client → Finlight news API; routes articles to RabbitMQ news queue |
+| Finlight Data Processor | FDP | Async RabbitMQ consumer for Finlight news articles; delegates to analyzers; writes to Redis |
 | Market Data Listener | MDL | WebSocket client → Massive.com; routes events to RabbitMQ with minimal processing |
 | Market Data Processor | MDP | Horizontally-scalable event processor; semaphore-based concurrency (500 tasks); delegates to pluggable analyzers; writes to Redis |
 | Leaderboard Analyzer | LBA | Redis pub/sub consumer; runs leaderboard and trade analyzers with sequential processing |
@@ -32,6 +33,7 @@ All servers emit OpenTelemetry traces/metrics and structured JSON logs.
 ```
 src/kuhl_haus/servers/
 ├── fdl_server.py         # Finlight Data Listener server entry point
+├── fdp_server.py         # Finlight Data Processor server entry point
 ├── lba_server.py         # Leaderboard Analyzer server entry point
 ├── mdl_server.py         # Market Data Listener server entry point
 ├── mdp_server.py         # Market Data Processor server entry point
@@ -41,6 +43,7 @@ src/kuhl_haus/servers/
 # Dockerfiles — one standard + one OTel-instrumented variant per server
 base.Dockerfile           # Shared base image
 fdl.Dockerfile / fdl_otel.Dockerfile
+fdp.Dockerfile / fdp_otel.Dockerfile
 mdl.Dockerfile / mdl_otel.Dockerfile
 mdp.Dockerfile / mdp_otel.Dockerfile
 lba.Dockerfile / lba_otel.Dockerfile
