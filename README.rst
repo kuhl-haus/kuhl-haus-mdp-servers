@@ -97,6 +97,13 @@ The platform consists of four main packages:
 - **Frontend Application** (`kuhl-haus-mdp-app <https://github.com/kuhl-haus/kuhl-haus-mdp-app>`_) - Web-based user interface and API
 - **Deployment Automation** (`kuhl-haus-mdp-deployment <https://github.com/kuhl-haus/kuhl-haus-mdp-deployment>`_) - Docker Compose, Ansible playbooks and Kubernetes manifests for environment provisioning
 
+Configuration
+-------------
+
+All servers are configured via environment variables. See the
+`Configuration Reference <https://kuhl-haus-mdp.readthedocs.io/en/latest/configuration.html>`_
+for the full list of variables per server, including defaults and descriptions.
+
 Documentation
 -------------
 
