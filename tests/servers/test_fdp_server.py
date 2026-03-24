@@ -66,8 +66,8 @@ def test_fdp_settings_with_default_redis_url_expect_local_redis():
     assert settings.redis_url == "redis://mdc:mdc@localhost:6379/0"
 
 
-def test_fdp_settings_with_default_server_port_expect_4202():
-    assert settings.server_port == 4202
+def test_fdp_settings_with_default_server_port_expect_4204():
+    assert settings.server_port == 4204
 
 
 def test_fdp_settings_with_default_log_level_expect_info():

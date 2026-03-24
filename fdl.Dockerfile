@@ -15,5 +15,5 @@ COPY . /app/
 # Install in editable mode
 RUN pip install --no-cache-dir -e .
 
-EXPOSE 4200/tcp
-CMD ["uvicorn", "kuhl_haus.servers.fdl_server:app", "--host", "0.0.0.0", "--port", "4200"]
+EXPOSE 4203/tcp
+CMD ["uvicorn", "kuhl_haus.servers.fdl_server:app", "--host", "0.0.0.0", "--port", "4203"]

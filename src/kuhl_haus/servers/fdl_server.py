@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
-    server_port: int = os.environ.get("SERVER_PORT", 4200)
+    server_port: int = os.environ.get("SERVER_PORT", 4203)
     log_level: str = os.environ.get("LOG_LEVEL", "INFO").upper()
     container_image: str = os.environ.get("CONTAINER_IMAGE", "Unknown")
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
@@ -231,4 +231,4 @@ async def health_check(response: Response):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=4200)
+    uvicorn.run(app, host="0.0.0.0", port=4203)
