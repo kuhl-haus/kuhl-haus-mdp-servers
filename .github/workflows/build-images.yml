@@ -108,6 +108,58 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # FDL images
+      - name: Build and push FDL Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fdl.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdl-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdl-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push FDL (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fdl_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdl-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdl-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # FDP images
+      - name: Build and push FDP Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fdp.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdp-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdp-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push FDP (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fdp_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdp-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-fdp-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       # MDL images
       - name: Build and push MDL Docker image
         uses: docker/build-push-action@v6
