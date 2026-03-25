@@ -67,11 +67,13 @@ wds_server = "kuhl_haus.servers.wds_server:app"
 **Language:** Python 3.14+  
 **Package manager:** PDM  
 **Build backend:** pdm-backend + setuptools-scm (version from git tags)  
-**Primary dependency:** `kuhl-haus-mdp` (core library)
+**Primary dependency:** `kuhl-haus-mdp` (core library, version-pinned in `pyproject.toml`)
 
 ```bash
-pdm install
+pip install -e ".[testing]"
 ```
+
+> ⚠️ **No requirements.txt files.** This repo does not use `requirements.txt` or `requirements-build.txt`. All dependencies are declared in `pyproject.toml`. Do **not** create or install from requirements text files. Use `pip install -e ".[testing]"` for development and testing.
 
 > ⚠️ **Build order matters:** In CI, always run `pdm build` before `pdm install`. Running `pdm install` first regenerates `pdm.lock`, making the working tree dirty — pdm-backend appends `+d<date>` to dirty builds, which PyPI rejects (PEP 440 local version identifiers).
 
