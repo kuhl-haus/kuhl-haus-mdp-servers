@@ -8,6 +8,7 @@ from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings
 
+from kuhl_haus.mdp.analyzers.finlight_data_analyzer import FinlightDataAnalyzer
 from kuhl_haus.mdp.components.finlight_data_processor import FinlightDataProcessor
 from kuhl_haus.mdp.enum.finlight_data_queue import FinlightDataQueue
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
@@ -54,7 +55,7 @@ async def lifespan(app: FastAPI):
         rabbitmq_url=settings.rabbitmq_url,
         queue_name=settings.queue_name,
         redis_url=settings.redis_url,
-        analyzer_class=None,
+        analyzer_class=FinlightDataAnalyzer,
         prefetch_count=settings.prefetch_count,
         max_concurrent_tasks=settings.max_concurrency,
     )
