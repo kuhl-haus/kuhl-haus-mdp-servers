@@ -1,5 +1,5 @@
 [build-system]
-requires = ["pdm-backend", "setuptools>=61.0"]
+requires = ["pdm-backend", "setuptools>=61.0", "setuptools-scm"]
 build-backend = "pdm.backend"
 
 [project]
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python"
 ]
 dependencies = [
-    "kuhl-haus-mdp",
+    "kuhl-haus-mdp==0.3.2",
     "websockets",
     "aio-pika",
     "redis",
@@ -26,7 +26,8 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic-settings",
     "python-dotenv",
-    "massive"
+    "massive",
+    "importlib_metadata",
 ]
 
 [project.urls]
@@ -39,6 +40,8 @@ Tracker = "https://github.com/kuhl-haus/kuhl-haus-mdp-servers/issues"
 [project.optional-dependencies]
 testing = [
     "setuptools",
+    "setuptools-scm",
+    "pdm",
     "pdm-backend",
     "pytest",
     "pytest-asyncio",
