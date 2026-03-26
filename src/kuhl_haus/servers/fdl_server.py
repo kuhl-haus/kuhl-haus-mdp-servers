@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     log_level: str = os.environ.get("LOG_LEVEL", "INFO").upper()
     container_image: str = os.environ.get("CONTAINER_IMAGE", "Unknown")
     image_version: str = os.environ.get("IMAGE_VERSION", "Unknown")
-    auto_start: bool = os.environ.get("MARKET_DATA_LISTENER_AUTO_START_ENABLED", False)
+    auto_start: bool = os.environ.get("FDL_AUTO_START_ENABLED", False)
 
 
 settings = Settings()
