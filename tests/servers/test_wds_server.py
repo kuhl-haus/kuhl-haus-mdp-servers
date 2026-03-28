@@ -4,10 +4,8 @@ Focuses on the limit parameter extraction and pass-through to get_cache().
 """
 import json
 import pytest
-from asgi_lifespan import LifespanManager
 from unittest.mock import AsyncMock, MagicMock, patch
-
-from httpx import AsyncClient, ASGITransport
+from starlette.testclient import TestClient
 
 MODULE = "kuhl_haus.servers.wds_server"
 
@@ -20,12 +18,20 @@ from kuhl_haus.servers.wds_server import app, settings  # noqa: E402
 
 def _make_mock_wds_service(cache_data=None):
     """Return a mock WidgetDataService."""
-    mock = AsyncMock()
+    mock = MagicMock()
+    mock.start = AsyncMock()
+    mock.stop = AsyncMock()
     mock.subscribe = AsyncMock()
     mock.unsubscribe = AsyncMock()
     mock.get_cache = AsyncMock(return_value=cache_data or [])
     mock.disconnect = AsyncMock()
-    mock._handle_pubsub = AsyncMock()
+    return mock
+
+
+def _make_mock_redis():
+    mock = AsyncMock()
+    mock.close = AsyncMock()
+    mock.pubsub = MagicMock(return_value=AsyncMock())
     return mock
 
 
@@ -34,64 +40,52 @@ def _make_mock_wds_service(cache_data=None):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
-@patch(f"{MODULE}.wds_service")
-async def test_wds_get_with_no_limit_expect_get_cache_called_without_limit(
-    mock_service,
-):
-    """get action with no limit field calls get_cache with default limit=0."""
+def test_wds_get_with_no_limit_expect_get_cache_called_with_zero():
+    """get action with no limit field calls get_cache(cache_key, limit=0)."""
     # Arrange
-    mock_service.get_cache = AsyncMock(return_value=[{"title": "Article 1"}])
-    mock_service.disconnect = AsyncMock()
-    mock_service._handle_pubsub = AsyncMock()
+    mock_service = _make_mock_wds_service(cache_data=[{"title": "Article 1"}])
+    mock_redis = _make_mock_redis()
 
-    async with LifespanManager(app):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            with patch.object(settings, "auth_enabled", False):
-                async with client.websocket_connect("/ws") as ws:
-                    # Act
-                    await ws.send_text(json.dumps({
-                        "action": "get",
-                        "cache": "news:feed:latest",
-                    }))
-                    response = json.loads(await ws.receive_text())
+    with patch(f"{MODULE}.redis") as mock_redis_module, \
+         patch(f"{MODULE}.WidgetDataService", return_value=mock_service), \
+         patch.object(settings, "auth_enabled", False):
+        mock_redis_module.from_url = MagicMock(return_value=mock_redis)
+
+        with TestClient(app) as client:
+            with client.websocket_connect("/ws") as ws:
+                # Act
+                ws.send_text(json.dumps({
+                    "action": "get",
+                    "cache": "news:feed:latest",
+                }))
+                response = json.loads(ws.receive_text())
 
     # Assert
     assert response["cache"] == "news:feed:latest"
-    mock_service.get_cache.assert_called_once_with(
-        "news:feed:latest", limit=0
-    )
+    mock_service.get_cache.assert_called_once_with("news:feed:latest", limit=0)
 
 
-@pytest.mark.asyncio
-@patch(f"{MODULE}.wds_service")
-async def test_wds_get_with_limit_expect_get_cache_called_with_limit(
-    mock_service,
-):
-    """get action with limit field passes limit to get_cache."""
+def test_wds_get_with_limit_expect_get_cache_called_with_limit():
+    """get action with limit field passes integer limit to get_cache."""
     # Arrange
-    mock_service.get_cache = AsyncMock(return_value=[{"title": "Article 1"}])
-    mock_service.disconnect = AsyncMock()
-    mock_service._handle_pubsub = AsyncMock()
+    mock_service = _make_mock_wds_service(cache_data=[{"title": "Article 1"}])
+    mock_redis = _make_mock_redis()
 
-    async with LifespanManager(app):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            with patch.object(settings, "auth_enabled", False):
-                async with client.websocket_connect("/ws") as ws:
-                    # Act
-                    await ws.send_text(json.dumps({
-                        "action": "get",
-                        "cache": "news:feed:latest",
-                        "limit": 500,
-                    }))
-                    response = json.loads(await ws.receive_text())
+    with patch(f"{MODULE}.redis") as mock_redis_module, \
+         patch(f"{MODULE}.WidgetDataService", return_value=mock_service), \
+         patch.object(settings, "auth_enabled", False):
+        mock_redis_module.from_url = MagicMock(return_value=mock_redis)
+
+        with TestClient(app) as client:
+            with client.websocket_connect("/ws") as ws:
+                # Act
+                ws.send_text(json.dumps({
+                    "action": "get",
+                    "cache": "news:feed:latest",
+                    "limit": 500,
+                }))
+                response = json.loads(ws.receive_text())
 
     # Assert
     assert response["cache"] == "news:feed:latest"
-    mock_service.get_cache.assert_called_once_with(
-        "news:feed:latest", limit=500
-    )
+    mock_service.get_cache.assert_called_once_with("news:feed:latest", limit=500)
