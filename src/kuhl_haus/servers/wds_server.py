@@ -145,6 +145,7 @@ async def websocket_endpoint(websocket: WebSocket):
         Subscribe:   {"action": "subscribe", "feed": "stocks:luld:*"}
         Unsubscribe: {"action": "unsubscribe", "feed": "stocks:luld:*"}
         Snapshot:    {"action": "get", "cache": "stocks:luld:*"}
+        Snapshot+N:  {"action": "get", "cache": "news:feed:latest", "limit": 1000}
     """
     await websocket.accept()
     client_info = {
@@ -220,7 +221,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     cache_key = data.get("cache")
                     if cache_key:
                         cache_request_counter.add(1)
-                        cached_data = await wds_service.get_cache(cache_key)
+                        limit = int(data.get("limit", 0))
+                        cached_data = await wds_service.get_cache(cache_key, limit=limit)
                         await websocket.send_json({
                             "cache": cache_key,
                             "data": cached_data
