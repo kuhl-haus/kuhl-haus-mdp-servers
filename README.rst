@@ -58,6 +58,15 @@ Servers
   FastAPI/WebSocket-to-Redis bridge providing real-time streaming to client
   applications with fan-out pattern.
 
+**Finlight Data Listener (FDL)**
+  WebSocket client connecting to Finlight, subscribing to real-time financial
+  news feeds and publishing enriched articles to RabbitMQ queues.
+
+**Finlight Data Processor (FDP)**
+  RabbitMQ consumer processing enriched news articles from the FDL queue,
+  running ``FinlightDataAnalyzer`` to cache articles in Redis and publish
+  updates to downstream consumers.
+
 Each server has a standard Dockerfile and an OpenTelemetry-instrumented variant
 (``*_otel.Dockerfile``) for production observability.
 
@@ -83,6 +92,12 @@ Container Images
    * - WDS
      - ``wds.Dockerfile`` / ``wds_otel.Dockerfile``
      - ``kuhl_haus.servers.wds_server:app``
+   * - FDL
+     - ``fdl.Dockerfile`` / ``fdl_otel.Dockerfile``
+     - ``kuhl_haus.servers.fdl_server:app``
+   * - FDP
+     - ``fdp.Dockerfile`` / ``fdp_otel.Dockerfile``
+     - ``kuhl_haus.servers.fdp_server:app``
 
 All images extend ``base.Dockerfile``, which installs dependencies and the package
 in editable mode.
