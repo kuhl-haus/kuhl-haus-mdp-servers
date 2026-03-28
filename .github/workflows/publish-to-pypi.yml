@@ -37,6 +37,10 @@ jobs:
     - name: Install package with build dependencies
       run: pip install --no-cache-dir -e ".[testing]"
 
+    # Tests
+    - name: Run tests with coverage
+      run: pytest --cov=kuhl_haus.servers --cov-report=html --cov-report=xml tests -v
+
     # Build Distribution Package
     - name: Build package
       run: pdm build
