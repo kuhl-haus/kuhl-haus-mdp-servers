@@ -1,13 +1,13 @@
 import json
 import logging
 import os
-import sys
-import time
+import asyncio
+import signal
 from contextlib import asynccontextmanager
 from typing import Set
 
 import redis.asyncio as redis
-from fastapi import BackgroundTasks, FastAPI, Response, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from kuhl_haus.mdp.components.widget_data_service import WidgetDataService
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
@@ -139,21 +139,24 @@ async def health_check(response: Response):
 
 
 @app.get("/restart", status_code=200)
-async def restart(background_tasks: BackgroundTasks):
+async def restart():
     """Trigger a graceful WDS restart for operational recovery.
 
-    Returns 200 immediately, then exits with code 0 after a short delay
-    so Kubernetes restart policy brings up a fresh instance. Use when WDS
-    stops delivering pub/sub messages without requiring k8s deployment rollout.
+    Returns 200 immediately, then sends SIGTERM to the process after a short
+    delay. Kubernetes restart policy brings up a fresh instance automatically.
+
+    NOTE: BackgroundTasks / sys.exit() does not work — BackgroundTasks runs
+    in a thread pool; SystemExit only kills the worker thread, not the process.
+    asyncio.create_task + os.kill(SIGTERM) signals the main event loop process.
     """
     logger.info("wds.restart.requested")
 
-    def _do_exit():
-        time.sleep(0.5)  # allow response to flush
+    async def _do_restart():
+        await asyncio.sleep(0.5)  # allow response to flush
         logger.info("wds.restart.exiting")
-        sys.exit(0)
+        os.kill(os.getpid(), signal.SIGTERM)
 
-    background_tasks.add_task(_do_exit)
+    asyncio.create_task(_do_restart())
     return JSONResponse({"status": "restarting"})
 
 
