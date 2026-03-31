@@ -1,11 +1,13 @@
 import json
 import logging
 import os
+import sys
+import time
 from contextlib import asynccontextmanager
 from typing import Set
 
 import redis.asyncio as redis
-from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect, status
+from fastapi import BackgroundTasks, FastAPI, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from kuhl_haus.mdp.components.widget_data_service import WidgetDataService
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
@@ -134,6 +136,25 @@ async def health_check(response: Response):
             "image_version": settings.image_version,
             "message": "An unhandled exception occurred during health check."
         }
+
+
+@app.post("/restart", status_code=200)
+async def restart(background_tasks: BackgroundTasks):
+    """Trigger a graceful WDS restart for operational recovery.
+
+    Returns 200 immediately, then exits with code 0 after a short delay
+    so Kubernetes restart policy brings up a fresh instance. Use when WDS
+    stops delivering pub/sub messages without requiring k8s deployment rollout.
+    """
+    logger.info("wds.restart.requested")
+
+    def _do_exit():
+        time.sleep(0.5)  # allow response to flush
+        logger.info("wds.restart.exiting")
+        sys.exit(0)
+
+    background_tasks.add_task(_do_exit)
+    return JSONResponse({"status": "restarting"})
 
 
 @app.websocket("/ws")
