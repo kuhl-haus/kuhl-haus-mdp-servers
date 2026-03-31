@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python"
 ]
 dependencies = [
-    "kuhl-haus-mdp==0.3.9",
+    "kuhl-haus-mdp==0.3.10",
     "websockets",
     "aio-pika",
     "redis",
