@@ -138,7 +138,7 @@ async def health_check(response: Response):
         }
 
 
-@app.post("/restart", status_code=200)
+@app.get("/restart", status_code=200)
 async def restart(background_tasks: BackgroundTasks):
     """Trigger a graceful WDS restart for operational recovery.
 
