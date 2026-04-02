@@ -8,6 +8,7 @@ from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings
 
+from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
 from kuhl_haus.mdp.analyzers.finlight_data_analyzer import FinlightDataAnalyzer
 from kuhl_haus.mdp.components.finlight_data_processor import FinlightDataProcessor
 from kuhl_haus.mdp.enum.finlight_data_queue import FinlightDataQueue
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
     queue_name: str = os.environ.get("FDP_QUEUE_NAME", FinlightDataQueue.NEWS.value)
     prefetch_count: int = os.environ.get("PREFETCH_COUNT", 100)
     max_concurrency: int = os.environ.get("MAX_CONCURRENCY", 500)
+
+    # Finlight Settings
+    finlight_api_key: str = os.environ.get("FINLIGHT_API_KEY", "")
+    news_feed_list_max: int = int(os.environ.get("NEWS_FEED_LIST_MAX", 10000))
+    news_ticker_list_max: int = int(os.environ.get("NEWS_TICKER_LIST_MAX", 100))
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -51,11 +57,21 @@ async def lifespan(app: FastAPI):
 
     logger.info("Starting Finlight Data Processor...")
 
+    analyzer_options = AnalyzerOptions(
+        redis_url=settings.redis_url,
+        finlight_api_key=settings.finlight_api_key or None,
+        kwargs={
+            "news_feed_list_max": settings.news_feed_list_max,
+            "news_ticker_list_max": settings.news_ticker_list_max,
+        },
+    )
+
     finlight_data_processor = FinlightDataProcessor(
         rabbitmq_url=settings.rabbitmq_url,
         queue_name=settings.queue_name,
         redis_url=settings.redis_url,
         analyzer_class=FinlightDataAnalyzer,
+        analyzer_options=analyzer_options,
         prefetch_count=settings.prefetch_count,
         max_concurrent_tasks=settings.max_concurrency,
     )
