@@ -99,3 +99,13 @@ Images are published to `ghcr.io/kuhl-haus/`.
 - **Squash merge only** — org-level enforcement; merge commits and rebase are disabled
 - All PRs target `mainline`; use feature branches for all changes
 - Version tags drive PyPI and Docker image releases — tag format: `vX.Y.Z`
+
+
+## Bug Workflow — Test First
+
+When a bug is reported, **do not start by fixing it**.
+
+1. **Write a failing test** that reproduces the bug first
+2. Confirm the test fails (proving the bug exists)
+3. Then fix the bug and prove it with a passing test
+
