@@ -216,7 +216,7 @@ async def restart_websocket_client():
 async def root():
     if massive_data_queues.connection_status["connected"] and massive_data_listener.connection_status["connected"]:
         ret = "Running"
-    elif massive_data_queues.connection_status["connected"]:
+    elif massive_data_listener.connection_status["healthy"]:
         ret = "Idle"
     else:
         ret = "Unhealthy"
@@ -241,10 +241,9 @@ async def health_check(response: Response):
         status_message = "Unhealthy"
         status_code = 0
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    # TODO: Investigate if this caused health check failures in production during off-hours.
-    # if settings.auto_start and not massive_data_listener.connection_status["connected"]:
-    #     status_message = "Unhealthy"
-    #     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    if settings.auto_start and not massive_data_listener.connection_status["healthy"]:
+        status_message = "Unhealthy"
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {
         "service": "Massive Data Listener",
         "status": status_message,
