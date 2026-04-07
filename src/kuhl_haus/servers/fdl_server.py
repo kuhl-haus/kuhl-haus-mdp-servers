@@ -4,7 +4,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from copy import copy
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Any, Dict
 
 from fastapi import FastAPI, Response, status
 from pydantic_settings import BaseSettings
@@ -93,7 +93,7 @@ async def lifespan(app: FastAPI):
         )
 
     # Build kwargs for listener instantiation
-    listener_kwargs = {
+    listener_kwargs: Dict[str, Any] = {
         "api_key": settings.finlight_api_key,
         "queues": fdq,
     }
