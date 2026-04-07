@@ -12,6 +12,7 @@ from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
 from kuhl_haus.mdp.analyzers.finlight_data_analyzer import FinlightDataAnalyzer
 from kuhl_haus.mdp.components.finlight_data_processor import FinlightDataProcessor
 from kuhl_haus.mdp.enum.finlight_data_queue import FinlightDataQueue
+from kuhl_haus.mdp.enum.market_data_cache_ttl import MarketDataCacheTTL
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
 
 
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
     finlight_api_key: str = os.environ.get("FINLIGHT_API_KEY", "")
     news_feed_list_max: int = int(os.environ.get("NEWS_FEED_LIST_MAX", 10000))
     news_ticker_list_max: int = int(os.environ.get("NEWS_TICKER_LIST_MAX", 100))
+    news_feed_cache_ttl: int = int(os.environ.get("NEWS_FEED_CACHE_TTL", MarketDataCacheTTL.NEWS_FEED_LATEST.value))
+    news_ticker_cache_ttl: int = int(os.environ.get("NEWS_TICKER_CACHE_TTL", MarketDataCacheTTL.NEWS_TICKER.value))
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -63,6 +66,8 @@ async def lifespan(app: FastAPI):
         kwargs={
             "news_feed_list_max": settings.news_feed_list_max,
             "news_ticker_list_max": settings.news_ticker_list_max,
+            "news_feed_cache_ttl": settings.news_feed_cache_ttl,
+            "news_ticker_cache_ttl": settings.news_ticker_cache_ttl,
         },
     )
 
