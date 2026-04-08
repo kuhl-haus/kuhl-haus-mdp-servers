@@ -35,8 +35,6 @@ class Settings(BaseSettings):
     max_reconnects: Optional[int] = os.environ.get("MASSIVE_MAX_RECONNECTS", 5)
     secure: bool = os.environ.get("MASSIVE_SECURE", True)
 
-    # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
 
     # RabbitMQ Settings
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")

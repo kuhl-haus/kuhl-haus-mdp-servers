@@ -11,6 +11,7 @@ from kuhl_haus.mdp.analyzers.top_trades_analyzer import TopTradesAnalyzer
 from kuhl_haus.mdp.components.massive_data_processor import MassiveDataProcessor
 from kuhl_haus.mdp.enum.massive_data_queue import MassiveDataQueue
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
+from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
 from kuhl_haus.mdp.helpers.utils import get_massive_api_key
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
 from pydantic_settings import BaseSettings
@@ -29,7 +30,8 @@ class Settings(BaseSettings):
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
 
     # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    mdc_redis_url: str = os.environ.get("MDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    wdc_redis_url: str = os.environ.get("WDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/1")
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -65,6 +67,11 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Market Data Processor...")
     process_manager = ProcessManager()
 
+    analyzer_options = AnalyzerOptions(
+        redis_url=settings.mdc_redis_url,
+        massive_api_key=settings.massive_api_key,
+    )
+
     # Start MassiveDataProcessors in separate processes
     for i in range(settings.parallelism):
         name = f"mdp_{MassiveDataQueue.AGGREGATE.value}_{i}"
@@ -74,9 +81,9 @@ async def lifespan(app: FastAPI):
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.AGGREGATE.value,
-            redis_url=settings.redis_url,
-            massive_api_key=settings.massive_api_key,
+            redis_url=settings.wdc_redis_url,
             analyzer_class=LeaderboardAnalyzer,
+            analyzer_options=analyzer_options,
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
@@ -90,9 +97,9 @@ async def lifespan(app: FastAPI):
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.TRADES.value,
-            redis_url=settings.redis_url,
-            massive_api_key=settings.massive_api_key,
+            redis_url=settings.wdc_redis_url,
             analyzer_class=TopTradesAnalyzer,
+            analyzer_options=analyzer_options,
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
@@ -106,9 +113,9 @@ async def lifespan(app: FastAPI):
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.QUOTES.value,
-            redis_url=settings.redis_url,
-            massive_api_key=settings.massive_api_key,
+            redis_url=settings.wdc_redis_url,
             analyzer_class=MassiveDataAnalyzer,
+            analyzer_options=analyzer_options,
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
@@ -122,9 +129,9 @@ async def lifespan(app: FastAPI):
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.HALTS.value,
-            redis_url=settings.redis_url,
-            massive_api_key=settings.massive_api_key,
+            redis_url=settings.wdc_redis_url,
             analyzer_class=MassiveDataAnalyzer,
+            analyzer_options=analyzer_options,
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )

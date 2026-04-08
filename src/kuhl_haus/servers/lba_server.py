@@ -6,6 +6,7 @@ from typing import List, Union
 from fastapi import FastAPI, Response, status
 from fastapi.responses import RedirectResponse
 from kuhl_haus.mdp.analyzers.leaderboard_analyzer import LeaderboardAnalyzer
+from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
 from kuhl_haus.mdp.components.massive_data_processor import MassiveDataProcessor
 from kuhl_haus.mdp.enum.massive_data_queue import MassiveDataQueue
 from kuhl_haus.mdp.helpers.process_manager import ProcessManager
@@ -26,8 +27,9 @@ class Settings(BaseSettings):
     # RabbitMQ Settings - Market Data Queue
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
 
-    # Redis Settings - Market Data Cache
-    redis_url: str = os.environ.get("REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    # Redis Settings
+    mdc_redis_url: str = os.environ.get("MDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    wdc_redis_url: str = os.environ.get("WDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/1")
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -63,14 +65,18 @@ async def lifespan(app: FastAPI):
     for i in range(settings.parallelism):
         name = f"lba_{MassiveDataQueue.AGGREGATE.value}_{i}"
         logger.info(f"Creating MassiveDataProcessor: {name}")
+        analyzer_options = AnalyzerOptions(
+            redis_url=settings.mdc_redis_url,
+            massive_api_key=settings.massive_api_key,
+        )
         process_manager.start_worker(
             name=name,
             worker_class=MassiveDataProcessor,
             rabbitmq_url=settings.rabbitmq_url,
             queue_name=MassiveDataQueue.AGGREGATE.value,
-            redis_url=settings.redis_url,
-            massive_api_key=settings.massive_api_key,
+            redis_url=settings.wdc_redis_url,
             analyzer_class=LeaderboardAnalyzer,
+            analyzer_options=analyzer_options,
             prefetch_count=settings.prefetch_count,
             max_concurrent_tasks=settings.max_concurrency,
         )
