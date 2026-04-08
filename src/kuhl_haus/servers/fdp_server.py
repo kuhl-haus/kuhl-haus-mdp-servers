@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     rabbitmq_url: str = os.environ.get("RABBITMQ_URL", "amqp://mdq:mdq@localhost:5672/")
 
     # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    mdc_redis_url: str = os.environ.get("MDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/0")
+    wdc_redis_url: str = os.environ.get("WDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/1")
 
     # Processor settings
     queue_name: str = os.environ.get("FDP_QUEUE_NAME", FinlightDataQueue.NEWS.value)
@@ -61,7 +62,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Finlight Data Processor...")
 
     analyzer_options = AnalyzerOptions(
-        redis_url=settings.redis_url,
+        redis_url=settings.mdc_redis_url,
         finlight_api_key=settings.finlight_api_key or None,
         kwargs={
             "news_feed_list_max": settings.news_feed_list_max,
@@ -74,7 +75,7 @@ async def lifespan(app: FastAPI):
     finlight_data_processor = FinlightDataProcessor(
         rabbitmq_url=settings.rabbitmq_url,
         queue_name=settings.queue_name,
-        redis_url=settings.redis_url,
+        redis_url=settings.wdc_redis_url,
         analyzer_class=FinlightDataAnalyzer,
         analyzer_options=analyzer_options,
         prefetch_count=settings.prefetch_count,

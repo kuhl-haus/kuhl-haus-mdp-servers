@@ -62,8 +62,12 @@ def test_fdp_settings_with_default_rabbitmq_url_expect_local_amqp():
     assert settings.rabbitmq_url == "amqp://mdq:mdq@localhost:5672/"
 
 
-def test_fdp_settings_with_default_redis_url_expect_local_redis():
-    assert settings.redis_url == "redis://mdc:mdc@localhost:6379/0"
+def test_fdp_settings_with_default_mdc_redis_url_expect_local_redis():
+    assert settings.mdc_redis_url == "redis://mdc:mdc@localhost:6379/0"
+
+
+def test_fdp_settings_with_default_wdc_redis_url_expect_local_redis():
+    assert settings.wdc_redis_url == "redis://mdc:mdc@localhost:6379/1"
 
 
 def test_fdp_settings_with_default_server_port_expect_4204():
@@ -231,7 +235,8 @@ async def test_fdp_root_expect_redirect_to_health(client):
 
 @pytest.mark.parametrize("attr", [
     "rabbitmq_url",
-    "redis_url",
+    "mdc_redis_url",
+    "wdc_redis_url",
     "prefetch_count",
     "max_concurrency",
     "queue_name",

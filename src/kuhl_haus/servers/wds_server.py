@@ -22,7 +22,7 @@ class UnauthorizedException(Exception):
 
 class Settings(BaseSettings):
     # Redis Settings
-    redis_url: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    wdc_redis_url: str = os.environ.get("WDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/1")
 
     # Server Settings
     server_ip: str = os.environ.get("SERVER_IP", "0.0.0.0")
@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
     # Startup
     active_ws_clients.clear()
     redis_client = redis.from_url(
-        settings.redis_url,
+        settings.wdc_redis_url,
         encoding="utf-8",
         decode_responses=True
     )
