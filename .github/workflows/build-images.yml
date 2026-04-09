@@ -238,6 +238,31 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # MDS images
+      - name: Build and push MDS Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./mds.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mds-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mds-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push MDS (OTel auto-instrumented) Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./mds_otel.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mds-otel-server:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/kuhl-haus-mds-otel-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       # WDS images
       - name: Build and push WDS Docker image
         uses: docker/build-push-action@v6
