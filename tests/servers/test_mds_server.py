@@ -171,21 +171,19 @@ async def test_mds_health_expect_service_name_market_data_scanner(client):
     assert response.json()["service"] == "Market Data Scanner"
 
 
-# TODO: https://github.com/kuhl-haus/kuhl-haus-mdp/issues/85
-# Uncomment after MDS deployment is stable.
-# async def test_mds_health_expect_scanner_stats_in_response(client):
-#     ac, mock_scanner = client
-#     mock_scanner.processed = 100
-#     mock_scanner.published_results = 95
-#     mock_scanner.errors = 2
-#
-#     response = await ac.get("/health")
-#     body = response.json()
-#     assert "processed" in body
-#     assert "published_results" in body
-#     assert "errors" in body
-#     assert "mdc_connected" in body
-#     assert "running" in body
+async def test_mds_health_expect_scanner_stats_in_response(client):
+    ac, mock_scanner = client
+    mock_scanner.processed = 100
+    mock_scanner.published_results = 95
+    mock_scanner.errors = 2
+
+    response = await ac.get("/health")
+    body = response.json()
+    assert "processed" in body
+    assert "published_results" in body
+    assert "errors" in body
+    assert "mdc_connected" in body
+    assert "running" in body
 
 
 async def test_mds_health_expect_container_image_and_version(client):
@@ -196,18 +194,16 @@ async def test_mds_health_expect_container_image_and_version(client):
     assert "image_version" in body
 
 
-# TODO: https://github.com/kuhl-haus/kuhl-haus-mdp/issues/85
-# Uncomment after MDS deployment is stable.
-# async def test_mds_health_with_exception_expect_503(client):
-#     ac, mock_scanner = client
-#     # Simulate health check error by making mdc_connected raise
-#     type(mock_scanner).mdc_connected = property(lambda self: (_ for _ in ()).throw(RuntimeError("boom")))
-#
-#     response = await ac.get("/health")
-#     assert response.status_code == 503
-#     body = response.json()
-#     assert body["status"] == "ERROR"
-#     assert body["status_code"] == 0
+async def test_mds_health_with_exception_expect_503(client):
+    ac, mock_scanner = client
+    # Simulate health check error by making mdc_connected raise
+    type(mock_scanner).mdc_connected = property(lambda self: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    response = await ac.get("/health")
+    assert response.status_code == 503
+    body = response.json()
+    assert body["status"] == "ERROR"
+    assert body["status_code"] == 0
 
 
 # ---------------------------------------------------------------------------
