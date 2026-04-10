@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings
 
 from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
-from kuhl_haus.mdp.analyzers.enhanced_quote_analyzer import EnhancedQuoteAnalyzer
+from kuhl_haus.mdp.analyzers.daily_range_analyzer import DailyRangeAnalyzer
 from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
 from kuhl_haus.mdp.enum.widget_data_cache_keys import WidgetDataCacheKeys
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     market_data_scanner = MarketDataScanner(
         redis_url=settings.wdc_redis_url,
         subscriptions=[f"{WidgetDataCacheKeys.QUOTE.value}:*"],
-        analyzer_class=EnhancedQuoteAnalyzer,
+        analyzer_class=DailyRangeAnalyzer,
         analyzer_options=analyzer_options,
     )
 
