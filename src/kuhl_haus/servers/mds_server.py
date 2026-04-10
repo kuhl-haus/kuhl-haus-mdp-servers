@@ -93,14 +93,16 @@ async def health_check(response: Response):
             "status_code": 1,
             "container_image": settings.container_image,
             "image_version": settings.image_version,
-            "mdc_connected": market_data_scanner.mdc_connected,
-            "running": market_data_scanner.running,
-            "processed": market_data_scanner.processed,
-            "published_results": market_data_scanner.published_results,
-            "empty_results": market_data_scanner.empty_results,
-            "decoding_errors": market_data_scanner.decoding_errors,
-            "errors": market_data_scanner.errors,
-            "restarts": market_data_scanner.restarts,
+            # TODO: https://github.com/kuhl-haus/kuhl-haus-mdp/issues/85
+            # Uncomment after MDS deployment is stable.
+            # "mdc_connected": market_data_scanner.mdc_connected,
+            # "running": market_data_scanner.running,
+            # "processed": market_data_scanner.processed,
+            # "published_results": market_data_scanner.published_results,
+            # "empty_results": market_data_scanner.empty_results,
+            # "decoding_errors": market_data_scanner.decoding_errors,
+            # "errors": market_data_scanner.errors,
+            # "restarts": market_data_scanner.restarts,
         }
     except Exception as e:
         logger.error(f"Health check error: {e}")
