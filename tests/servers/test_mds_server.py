@@ -124,8 +124,8 @@ async def test_mds_lifespan_with_default_settings_expect_quote_subscription():
     assert any("quote" in s for s in subscriptions)
 
 
-async def test_mds_lifespan_with_default_settings_expect_enhanced_quote_analyzer():
-    from kuhl_haus.mdp.analyzers.enhanced_quote_analyzer import EnhancedQuoteAnalyzer
+async def test_mds_lifespan_with_default_settings_expect_daily_range_analyzer():
+    from kuhl_haus.mdp.analyzers.daily_range_analyzer import DailyRangeAnalyzer
     mock_scanner = _make_mock_scanner()
 
     with patch(f"{MODULE}.MarketDataScanner", return_value=mock_scanner) as mock_cls:
@@ -134,7 +134,7 @@ async def test_mds_lifespan_with_default_settings_expect_enhanced_quote_analyzer
                 pass
 
     call_kwargs = mock_cls.call_args.kwargs
-    assert call_kwargs["analyzer_class"] is EnhancedQuoteAnalyzer
+    assert call_kwargs["analyzer_class"] is DailyRangeAnalyzer
 
 
 # ---------------------------------------------------------------------------
