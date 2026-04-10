@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python"
 ]
 dependencies = [
-    "kuhl-haus-mdp==0.4.6",
+    "kuhl-haus-mdp==0.4.7",
     "websockets",
     "aio-pika",
     "redis",
@@ -56,6 +56,7 @@ fdp_server = "kuhl_haus.servers.fdp_server:app"
 lba_server = "kuhl_haus.servers.lba_server:app"
 mdl_server = "kuhl_haus.servers.mdl_server:app"
 mdp_server = "kuhl_haus.servers.mdp_server:app"
+mds_server = "kuhl_haus.servers.mds_server:app"
 wds_server = "kuhl_haus.servers.wds_server:app"
 
 
