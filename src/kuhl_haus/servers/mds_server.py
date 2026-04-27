@@ -11,12 +11,16 @@ from kuhl_haus.mdp.analyzers.analyzer import AnalyzerOptions
 from kuhl_haus.mdp.analyzers.daily_range_analyzer import DailyRangeAnalyzer
 from kuhl_haus.mdp.components.market_data_scanner import MarketDataScanner
 from kuhl_haus.mdp.enum.widget_data_cache_keys import WidgetDataCacheKeys
+from kuhl_haus.mdp.enum.widget_data_cache_limits import WidgetDataCacheLimits
 from kuhl_haus.mdp.helpers.structured_logging import setup_logging
 
 
 class Settings(BaseSettings):
     # Redis Settings (WDC only — MDS never touches MDC)
     wdc_redis_url: str = os.environ.get("WDC_REDIS_URL", "redis://mdc:mdc@localhost:6379/1")
+
+    # Processor Settings
+    dra_cache_list_max: int = os.environ.get("DRA_CACHE_LIST_MAX", WidgetDataCacheLimits.DRA_CACHE_LIST_MAX.value)
 
     # Massive Settings
     massive_api_key: str = os.environ.get("MASSIVE_API_KEY", "")
@@ -49,6 +53,9 @@ async def lifespan(app: FastAPI):
     analyzer_options = AnalyzerOptions(
         redis_url=settings.wdc_redis_url,
         massive_api_key=settings.massive_api_key or None,
+        kwargs={
+            "dra_cache_list_max": settings.dra_cache_list_max
+        },
     )
 
     market_data_scanner = MarketDataScanner(
