@@ -128,11 +128,14 @@ For architecture details, component descriptions, and API reference, see the
 Additional Resources
 --------------------
 
-📖 **Blog Series:**
+📖 **Blog Posts:**
+
+All of my blog posts related to Kuhl Haus MDP are tagged with ``#kuhl-haus-mdp`` and listed in reverse chronological order at `oldschool-engineer.dev/tags/#kuhl-haus-mdp <https://oldschool-engineer.dev/tags/#kuhl-haus-mdp>`_.
+
+The 5-part series where it all began:
 
 - `Part 1: Why I Built It <https://oldschool-engineer.dev/side%20projects/2026/01/16/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner.html>`_
 - `Part 2: How to Run It <https://oldschool-engineer.dev/side%20projects/2026/01/21/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-2.html>`_
 - `Part 3: How to Deploy It <https://oldschool-engineer.dev/infrastructure/2026/01/31/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-3.html>`_
 - `Part 4: Evolution from Prototype to Production <https://oldschool-engineer.dev/software%20engineering/2026/02/11/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-4.html>`_
 - `Part 5: Wave 1 Complete: Bugs, Bottlenecks, and Breaking 1,000 msg/s <https://oldschool-engineer.dev/software%20engineering/2026/02/23/what-i-built-after-quitting-amazon-spoiler-its-a-stock-scanner-part-5.html>`_
-
